@@ -2,12 +2,20 @@
   "$schema": "https://wails.io/schemas/config.v2.json",
   "name": "hmiproject",
   "outputfilename": "hmiproject",
-  "frontend:install": "npm install",
-  "frontend:build": "npm run build",
-  "frontend:dev:watcher": "npm run dev",
+  "frontend:install": "pnpm install",
+  "frontend:build": "pnpm run build",
+  "frontend:dev:watcher": "pnpm run dev",
   "frontend:dev:serverUrl": "auto",
   "author": {
     "name": "mikedev64",
     "email": "joan.pinto.dev@gmail.com"
-  }
+  },
+  "wailsjsdir": "./frontend/packages/wailjs-bindings/",
+  "info": {
+    "companyName": "mikedev64",
+    "productName": "HMIngot",
+    "productVersion": "0.0.1"
+  },
+  "nsisType": "multiple",
+  "version": "2"
 }

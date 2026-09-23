@@ -1,19 +1,23 @@
 {
-  "name": "frontend",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "preact": "^10.24.0"
-  },
-  "devDependencies": {
-    "@preact/preset-vite": "^2.10.0",
-    "typescript": "^5.6.3",
-    "vite": "^7.0.0"
-  }
+        "name": "frontend",
+        "private": true,
+        "version": "0.0.0",
+        "type": "module",
+        "scripts": {
+                "dev": "vite",
+                "build": "tsc && vite build",
+                "preview": "vite preview",
+                "format": "prettier --write .",
+                "format:check": "prettier --check ."
+        },
+        "dependencies": {
+                "preact": "^10.24.0",
+                "wailjs-bindings": "workspace:*"
+        },
+        "devDependencies": {
+                "@preact/preset-vite": "^2.10.0",
+                "prettier": "^3.6.2",
+                "typescript": "^5.6.3",
+                "vite": "^7.0.0"
+        }
 }
