@@ -1,0 +1,53 @@
+.hmi-number {
+        display: inline-flex;
+        align-items: stretch;
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius);
+        background: var(--hmi-surface-sunken);
+        overflow: hidden;
+        width: 100%;
+}
+
+.hmi-number.is-disabled {
+        opacity: 0.55;
+}
+
+.hmi-number__btn {
+        width: 34px;
+        border: none;
+        background: var(--hmi-surface-raised);
+        color: var(--hmi-text-dim);
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition:
+                background 0.12s ease,
+                color 0.12s ease;
+}
+
+.hmi-number__btn:hover:not(:disabled) {
+        background: var(--hmi-accent-strong);
+        color: #fff;
+}
+
+.hmi-number__btn:disabled {
+        cursor: not-allowed;
+}
+
+.hmi-number__input {
+        flex: 1;
+        min-width: 0;
+        border: none;
+        background: transparent;
+        color: var(--hmi-text);
+        font-family: var(--hmi-mono);
+        font-size: 14px;
+        font-weight: 600;
+        text-align: center;
+        padding: 6px 4px;
+        outline: none;
+}
+
+.hmi-number__input:disabled {
+        cursor: not-allowed;
+}

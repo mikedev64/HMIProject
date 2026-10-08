@@ -1,0 +1,11 @@
+{
+  "name": "plc-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Servidor HTTP que simula un PLC para el prototipo HMI",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

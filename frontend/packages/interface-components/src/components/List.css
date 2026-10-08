@@ -1,0 +1,52 @@
+.hmi-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+}
+
+.hmi-list--vertical {
+        flex-direction: column;
+        gap: 2px;
+}
+
+.hmi-list--horizontal {
+        flex-direction: row;
+        gap: 6px;
+        flex-wrap: wrap;
+}
+
+.hmi-list-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: var(--hmi-radius);
+        border: 1px solid transparent;
+        color: var(--hmi-text-dim);
+        font-family: var(--hmi-font);
+        font-size: 13px;
+        cursor: pointer;
+        transition:
+                background 0.12s ease,
+                border-color 0.12s ease,
+                color 0.12s ease;
+        user-select: none;
+}
+
+.hmi-list-item:hover:not(.is-disabled) {
+        background: var(--hmi-surface-raised);
+        color: var(--hmi-text);
+}
+
+.hmi-list-item.is-selected {
+        background: color-mix(in srgb, var(--hmi-accent) 16%, var(--hmi-surface));
+        border-color: color-mix(in srgb, var(--hmi-accent) 55%, transparent);
+        color: var(--hmi-accent);
+        font-weight: 700;
+}
+
+.hmi-list-item.is-disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+}

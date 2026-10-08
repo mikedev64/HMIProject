@@ -1,0 +1,47 @@
+.hmi-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 1px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--hmi-border-strong);
+        background: var(--hmi-surface-raised);
+        color: var(--hmi-text-dim);
+        font-family: var(--hmi-mono);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        white-space: nowrap;
+}
+
+.hmi-badge__dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+        box-shadow: 0 0 6px currentColor;
+}
+
+.hmi-badge--ok {
+        color: var(--hmi-ok);
+        border-color: color-mix(in srgb, var(--hmi-ok) 55%, transparent);
+        background: color-mix(in srgb, var(--hmi-ok) 12%, var(--hmi-surface));
+}
+
+.hmi-badge--warn {
+        color: var(--hmi-warn);
+        border-color: color-mix(in srgb, var(--hmi-warn) 55%, transparent);
+        background: color-mix(in srgb, var(--hmi-warn) 12%, var(--hmi-surface));
+}
+
+.hmi-badge--danger {
+        color: var(--hmi-alarm);
+        border-color: color-mix(in srgb, var(--hmi-alarm) 55%, transparent);
+        background: color-mix(in srgb, var(--hmi-alarm) 12%, var(--hmi-surface));
+}
+
+.hmi-badge--info {
+        color: var(--hmi-accent);
+        border-color: color-mix(in srgb, var(--hmi-accent) 55%, transparent);
+        background: color-mix(in srgb, var(--hmi-accent) 12%, var(--hmi-surface));
+}

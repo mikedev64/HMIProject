@@ -1,0 +1,29 @@
+/*
+ * Tokens de diseño del entorno HMI (estilo PanelView industrial).
+ * Se importan desde index.ts, por lo que cualquier consumidor de la librería
+ * recibe los estilos base automáticamente.
+ */
+:root {
+        --hmi-bg: #0d1117;
+        --hmi-bg-grid: #161d27;
+        --hmi-surface: #161d27;
+        --hmi-surface-raised: #1c2532;
+        --hmi-surface-sunken: #0a0e14;
+        --hmi-border: #2a3542;
+        --hmi-border-strong: #3d4c5e;
+        --hmi-text: #e6edf3;
+        --hmi-text-dim: #8b98a9;
+        --hmi-text-faint: #5c6b7e;
+        --hmi-accent: #4aa3ff;
+        --hmi-accent-strong: #1f6feb;
+        --hmi-ok: #3fb950;
+        --hmi-warn: #d29922;
+        --hmi-danger: #f85149;
+        --hmi-run: #3fb950;
+        --hmi-alarm: #ff5c57;
+        --hmi-radius: 6px;
+        --hmi-radius-lg: 10px;
+        --hmi-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+        --hmi-font: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --hmi-mono: "SFMono-Regular", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+}

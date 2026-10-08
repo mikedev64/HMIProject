@@ -1,0 +1,75 @@
+.hmi-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius);
+        font-family: var(--hmi-font);
+        font-weight: 700;
+        cursor: pointer;
+        transition:
+                background 0.12s ease,
+                border-color 0.12s ease,
+                color 0.12s ease;
+        user-select: none;
+        white-space: nowrap;
+}
+
+.hmi-btn--sm {
+        padding: 3px 9px;
+        font-size: 12px;
+}
+
+.hmi-btn--md {
+        padding: 6px 14px;
+        font-size: 13px;
+}
+
+.hmi-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+}
+
+.hmi-btn--primary {
+        background: var(--hmi-accent-strong);
+        border-color: var(--hmi-accent-strong);
+        color: #fff;
+}
+
+.hmi-btn--primary:hover:not(:disabled) {
+        background: var(--hmi-accent);
+        border-color: var(--hmi-accent);
+}
+
+.hmi-btn--secondary {
+        background: var(--hmi-surface-raised);
+        color: var(--hmi-text);
+}
+
+.hmi-btn--secondary:hover:not(:disabled) {
+        border-color: var(--hmi-accent);
+        color: var(--hmi-accent);
+}
+
+.hmi-btn--ghost {
+        background: transparent;
+        border-color: transparent;
+        color: var(--hmi-text-dim);
+}
+
+.hmi-btn--ghost:hover:not(:disabled) {
+        color: var(--hmi-text);
+        background: var(--hmi-surface-raised);
+}
+
+.hmi-btn--danger {
+        background: transparent;
+        border-color: var(--hmi-danger);
+        color: var(--hmi-danger);
+}
+
+.hmi-btn--danger:hover:not(:disabled) {
+        background: var(--hmi-danger);
+        color: #fff;
+}

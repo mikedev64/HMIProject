@@ -1,0 +1,93 @@
+.hmi-panel {
+        display: flex;
+        flex-direction: column;
+        width: 340px;
+        min-width: 340px;
+        height: 100%;
+        background: var(--hmi-surface);
+        border-left: 1px solid var(--hmi-border-strong);
+        box-shadow: var(--hmi-shadow);
+        font-family: var(--hmi-font);
+        color: var(--hmi-text);
+        animation: hmi-panel-in 0.18s ease-out;
+}
+
+@keyframes hmi-panel-in {
+        from {
+                transform: translateX(24px);
+                opacity: 0;
+        }
+        to {
+                transform: translateX(0);
+                opacity: 1;
+        }
+}
+
+.hmi-panel__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 14px 16px 12px;
+        border-bottom: 1px solid var(--hmi-border);
+        background: var(--hmi-surface-raised);
+}
+
+.hmi-panel__titles {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+}
+
+.hmi-panel__title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+}
+
+.hmi-panel__subtitle {
+        font-family: var(--hmi-mono);
+        font-size: 11px;
+        color: var(--hmi-text-faint);
+}
+
+.hmi-panel__close {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--hmi-radius);
+        border: 1px solid var(--hmi-border-strong);
+        background: transparent;
+        color: var(--hmi-text-dim);
+        font-size: 14px;
+        cursor: pointer;
+        transition:
+                color 0.12s ease,
+                border-color 0.12s ease,
+                background 0.12s ease;
+}
+
+.hmi-panel__close:hover {
+        color: var(--hmi-danger);
+        border-color: var(--hmi-danger);
+        background: color-mix(in srgb, var(--hmi-danger) 12%, transparent);
+}
+
+.hmi-panel__body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px 16px;
+}
+
+.hmi-panel__footer {
+        padding: 12px 16px;
+        border-top: 1px solid var(--hmi-border);
+        background: var(--hmi-surface-raised);
+        font-size: 12px;
+        color: var(--hmi-text-faint);
+}

@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      interface-components:
+        specifier: workspace:*
+        version: link:packages/interface-components
       preact:
         specifier: ^10.24.0
         version: 10.29.8
