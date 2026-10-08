@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 220" width="300" height="220">
+        <defs>
+                <radialGradient id="volute" cx="0.4" cy="0.35" r="0.8">
+                        <stop offset="0" stop-color="#2c3a4d" />
+                        <stop offset="1" stop-color="#1c2532" />
+                </radialGradient>
+        </defs>
+
+        <!-- suelo -->
+        <rect x="16" y="196" width="268" height="6" rx="3" fill="#0a0e14" stroke="#2a3542" />
+
+        <!-- base -->
+        <rect x="40" y="168" width="220" height="16" rx="5" fill="#232e3d" stroke="#3d4c5e" stroke-width="2" />
+
+        <!-- motor -->
+        <rect x="150" y="96" width="112" height="72" rx="14" fill="#2c3a4d" stroke="#3d4c5e" stroke-width="2" />
+        <g stroke="#3d4c5e" stroke-width="3">
+                <line x1="176" y1="102" x2="176" y2="162" />
+                <line x1="194" y1="102" x2="194" y2="162" />
+                <line x1="212" y1="102" x2="212" y2="162" />
+                <line x1="230" y1="102" x2="230" y2="162" />
+        </g>
+        <rect x="252" y="118" width="14" height="28" rx="4" fill="#4aa3ff" />
+
+        <!-- eje -->
+        <rect x="132" y="124" width="24" height="16" fill="#8b98a9" />
+
+        <!-- carcasa (voluta) -->
+        <circle cx="96" cy="132" r="54" fill="url(#volute)" stroke="#3d4c5e" stroke-width="3" />
+        <circle cx="96" cy="132" r="34" fill="none" stroke="#2a3542" stroke-width="2" />
+        <circle cx="96" cy="132" r="10" fill="#0a0e14" stroke="#4aa3ff" stroke-width="3" />
+
+        <!-- tobera de descarga (arriba) -->
+        <rect x="82" y="46" width="28" height="42" rx="4" fill="#232e3d" stroke="#3d4c5e" stroke-width="2" />
+        <rect x="70" y="34" width="52" height="16" rx="5" fill="#2c3a4d" stroke="#3d4c5e" stroke-width="2" />
+
+        <!-- suction (izquierda) -->
+        <rect x="16" y="118" width="34" height="28" rx="5" fill="#232e3d" stroke="#3d4c5e" stroke-width="2" />
+        <rect x="8" y="110" width="12" height="44" rx="4" fill="#2c3a4d" stroke="#3d4c5e" stroke-width="2" />
+
+        <!-- indicador de presión -->
+        <circle cx="146" cy="70" r="16" fill="#0a0e14" stroke="#3d4c5e" stroke-width="2" />
+        <path d="M146 70 L154 60" stroke="#3fb950" stroke-width="3" stroke-linecap="round" />
+        <circle cx="146" cy="70" r="3" fill="#8b98a9" />
+        <rect x="142" y="86" width="8" height="24" fill="#3d4c5e" />
+</svg>

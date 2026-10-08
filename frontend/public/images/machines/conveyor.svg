@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200" width="360" height="200">
+        <defs>
+                <linearGradient id="belt" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#2c3a4d" />
+                        <stop offset="1" stop-color="#1c2532" />
+                </linearGradient>
+        </defs>
+
+        <!-- suelo -->
+        <rect x="16" y="178" width="328" height="6" rx="3" fill="#0a0e14" stroke="#2a3542" />
+
+        <!-- patas -->
+        <rect x="58" y="140" width="12" height="38" fill="#3d4c5e" />
+        <rect x="290" y="140" width="12" height="38" fill="#3d4c5e" />
+
+        <!-- marco -->
+        <rect x="34" y="118" width="292" height="24" rx="8" fill="#232e3d" stroke="#3d4c5e" stroke-width="2" />
+
+        <!-- banda -->
+        <rect x="34" y="96" width="292" height="24" rx="12" fill="url(#belt)" stroke="#3d4c5e" stroke-width="2" />
+        <g stroke="#5c6b7e" stroke-width="2">
+                <line x1="70" y1="98" x2="70" y2="118" />
+                <line x1="110" y1="98" x2="110" y2="118" />
+                <line x1="150" y1="98" x2="150" y2="118" />
+                <line x1="190" y1="98" x2="190" y2="118" />
+                <line x1="230" y1="98" x2="230" y2="118" />
+                <line x1="270" y1="98" x2="270" y2="118" />
+                <line x1="310" y1="98" x2="310" y2="118" />
+        </g>
+
+        <!-- rodillos extremos -->
+        <circle cx="42" cy="108" r="14" fill="#0a0e14" stroke="#3d4c5e" stroke-width="3" />
+        <circle cx="318" cy="108" r="14" fill="#0a0e14" stroke="#3d4c5e" stroke-width="3" />
+        <circle cx="42" cy="108" r="4" fill="#8b98a9" />
+        <circle cx="318" cy="108" r="4" fill="#8b98a9" />
+
+        <!-- cajas transportadas -->
+        <rect x="92" y="64" width="40" height="32" rx="3" fill="#8a6d3b" stroke="#c9a25a" stroke-width="2" />
+        <line x1="112" y1="64" x2="112" y2="96" stroke="#c9a25a" stroke-width="2" />
+        <rect x="196" y="68" width="34" height="28" rx="3" fill="#8a6d3b" stroke="#c9a25a" stroke-width="2" />
+        <line x1="213" y1="68" x2="213" y2="96" stroke="#c9a25a" stroke-width="2" />
+
+        <!-- motor -->
+        <rect x="300" y="132" width="40" height="30" rx="7" fill="#2c3a4d" stroke="#3d4c5e" stroke-width="2" />
+        <rect x="296" y="140" width="8" height="14" rx="3" fill="#4aa3ff" />
+
+        <!-- sensor de entrada -->
+        <rect x="46" y="60" width="8" height="36" fill="#3d4c5e" />
+        <circle cx="50" cy="56" r="7" fill="#0a0e14" stroke="#3fb950" stroke-width="2" />
+        <circle cx="50" cy="56" r="3" fill="#3fb950" />
+</svg>
