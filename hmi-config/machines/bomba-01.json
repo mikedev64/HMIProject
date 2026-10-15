@@ -3,8 +3,15 @@
   "name": "Bomba de proceso 01",
   "type": "bomba",
   "image": "/images/machines/pump.svg",
-  "size": { "width": 300, "height": 220 },
-  "statusTags": { "run": "B3/20", "alarm": "B3/21", "ack": "B3/22" },
+  "size": {
+    "width": 300,
+    "height": 220
+  },
+  "statusTags": {
+    "run": "B3/20",
+    "alarm": "B3/21",
+    "ack": "B3/22"
+  },
   "tags": [
     {
       "name": "presion_setpoint",
@@ -16,8 +23,7 @@
       "min": 0,
       "max": 10,
       "group": "Proceso",
-      "default": 4.5,
-      "sim": { "kind": "static" }
+      "default": 4.5
     },
     {
       "name": "presion_descarga",
@@ -29,8 +35,7 @@
       "min": 0,
       "max": 12,
       "group": "Proceso",
-      "default": 0,
-      "sim": { "kind": "follow", "source": "F8:20", "gate": "B3/20", "noise": 0.2 }
+      "default": 0
     },
     {
       "name": "caudal",
@@ -42,8 +47,7 @@
       "min": 0,
       "max": 300,
       "group": "Proceso",
-      "default": 0,
-      "sim": { "kind": "follow", "source": "F8:20", "gate": "B3/20", "noise": 4, "scale": 25 }
+      "default": 0
     },
     {
       "name": "marcha_bomba",
@@ -52,8 +56,7 @@
       "dataType": "bool",
       "access": "rw",
       "group": "Actuadores",
-      "default": false,
-      "sim": { "kind": "static" }
+      "default": false
     },
     {
       "name": "horas_marcha",
@@ -63,8 +66,7 @@
       "access": "ro",
       "unit": "h",
       "group": "Estado",
-      "default": 0,
-      "sim": { "kind": "counter", "gate": "B3/20", "periodMs": 5000 }
+      "default": 0
     },
     {
       "name": "alarma_sobrepresion",
@@ -73,8 +75,7 @@
       "dataType": "bool",
       "access": "ro",
       "group": "Estado",
-      "default": false,
-      "sim": { "kind": "boolRandom", "probability": 0.004 }
+      "default": false
     },
     {
       "name": "ack_alarmas",
@@ -83,8 +84,7 @@
       "dataType": "bool",
       "access": "rw",
       "group": "Estado",
-      "default": false,
-      "sim": { "kind": "static" }
+      "default": false
     }
   ],
   "hmi": {
@@ -100,29 +100,87 @@
                 "title": "Mando",
                 "columns": 2,
                 "items": [
-                  { "kind": "switch", "tag": "marcha_bomba", "label": "Bomba" },
-                  { "kind": "button", "label": "Marcha", "variant": "primary", "momentary": true, "write": { "tag": "marcha_bomba", "value": true } },
-                  { "kind": "button", "label": "Paro", "variant": "danger", "write": { "tag": "marcha_bomba", "value": false } },
-                  { "kind": "pad", "tag": "presion_setpoint", "label": "Presión setpoint" }
+                  {
+                    "kind": "button",
+                    "label": "Marcha",
+                    "variant": "primary",
+                    "momentary": true,
+                    "write": {
+                      "tag": "marcha_bomba",
+                      "value": true
+                    }
+                  },
+                  {
+                    "kind": "button",
+                    "label": "Paro",
+                    "variant": "danger",
+                    "write": {
+                      "tag": "marcha_bomba",
+                      "value": false
+                    }
+                  },
+                  {
+                    "kind": "pad",
+                    "tag": "presion_setpoint",
+                    "label": "Presión setpoint"
+                  }
                 ]
               },
               {
                 "title": "Estado",
                 "columns": 2,
                 "items": [
-                  { "kind": "lamp", "tag": "marcha_bomba", "label": "Bomba activa", "tone": "ok" },
-                  { "kind": "lamp", "tag": "alarma_sobrepresion", "label": "Sobrepresión", "tone": "danger" }
+                  {
+                    "kind": "lamp",
+                    "tag": "marcha_bomba",
+                    "label": "Bomba activa",
+                    "tone": "ok"
+                  },
+                  {
+                    "kind": "lamp",
+                    "tag": "alarma_sobrepresion",
+                    "label": "Sobrepresión",
+                    "tone": "danger"
+                  }
                 ]
               }
             ]
           },
-          { "type": "groups" },
-          { "type": "recipes" }
+          {
+            "type": "groups"
+          },
+          {
+            "type": "recipes"
+          }
         ]
       },
-      { "id": "proceso", "title": "Proceso", "blocks": [{ "type": "process" }] },
-      { "id": "tendencia", "title": "Tendencia", "blocks": [{ "type": "trend" }] },
-      { "id": "alarmas", "title": "Alarmas", "blocks": [{ "type": "alarms" }] }
+      {
+        "id": "proceso",
+        "title": "Proceso",
+        "blocks": [
+          {
+            "type": "process"
+          }
+        ]
+      },
+      {
+        "id": "tendencia",
+        "title": "Tendencia",
+        "blocks": [
+          {
+            "type": "trend"
+          }
+        ]
+      },
+      {
+        "id": "alarmas",
+        "title": "Alarmas",
+        "blocks": [
+          {
+            "type": "alarms"
+          }
+        ]
+      }
     ]
   }
 }

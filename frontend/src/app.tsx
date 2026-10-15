@@ -1,4 +1,5 @@
 import { useEffect, useState } from "preact/hooks";
+import { LocationProvider, Route, Router, useLocation } from "preact-iso";
 import { Badge, Button, KeypadProvider, List, ListItem, Panel, Tab, Tabs } from "interface-components";
 import { isPreviewMode } from "./api/backend";
 import { ADMIN_RANK, OPERATOR_RANK, levelLabel, levelRank } from "./lib/levels";
@@ -24,7 +25,28 @@ import { AuditLog } from "./components/audit-log";
 import { ConfigWorkspace } from "./components/config-editor";
 
 export function App() {
+        return (
+                <LocationProvider>
+                        <Router>
+                                <Route path="/" component={HmiApp} />
+                                <Route path="/login" component={HmiApp} />
+                                <Route default component={NotFound} />
+                        </Router>
+                </LocationProvider>
+        );
+}
+
+function NotFound() {
+        const { route } = useLocation();
+        useEffect(() => {
+                route("/", true);
+        }, [route]);
+        return null;
+}
+
+function HmiApp() {
         const backend = useBackend();
+        const { path, route } = useLocation();
         const { config, error: loadError, refresh: reloadConfig } = useConfig(backend);
         const { session, flags, ready, login, logout } = useSession(backend);
         const { machines, selected: focused, selectedId: focusedId, select: setFocusedId } = useMachines(config);
@@ -42,6 +64,13 @@ export function App() {
         const requireLogin = config?.security?.requireLogin !== false;
         const canWrite = !requireLogin || levelRank(session.level) >= OPERATOR_RANK;
         const isAdmin = !requireLogin || levelRank(session.level) >= ADMIN_RANK;
+        const gate = Boolean(config) && ready && requireLogin && !session.authenticated;
+
+        useEffect(() => {
+                if (!config || !ready) return;
+                if (gate && path !== "/login") route("/login", true);
+                else if (!gate && path === "/login") route("/", true);
+        }, [config, ready, gate, path, route]);
 
         useSessionTimeout(session, config?.security?.sessionTimeoutMin ?? 0, logout);
 
@@ -100,7 +129,7 @@ export function App() {
                 );
         }
 
-        if (config && ready && requireLogin && !session.authenticated) {
+        if (gate) {
                 return (
                         <div class="hm-root hm-root--locked">
                                 <LoginScreen onLogin={login} />

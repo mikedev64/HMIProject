@@ -13,6 +13,7 @@
         "dependencies": {
                 "interface-components": "workspace:*",
                 "preact": "^10.24.0",
+                "preact-iso": "^2.12.2",
                 "wailjs-bindings": "workspace:*"
         },
         "devDependencies": {
