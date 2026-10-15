@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Estándar 120°C",
+    "values": { "N7:0": 120, "N7:1": 1500 },
+    "updated": 0
+  },
+  {
+    "name": "Rápido 180°C",
+    "values": { "N7:0": 180, "N7:1": 2200 },
+    "updated": 0
+  }
+]

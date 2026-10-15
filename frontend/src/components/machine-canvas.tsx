@@ -1,21 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { Badge, Popover } from "interface-components";
-import type { Machine, Snapshot } from "./backend";
-import { asBool, formatValue } from "./format";
-
-/*
- * Lienzo 2D con las máquinas del mapa HMI (estilo PanelView):
- *
- *  - Vista general: todas las máquinas colocadas en el mundo, con estado
- *    (run/alarma) y nombre dibujados sobre el lienzo.
- *  - Hover: popup (Popover) con los datos en vivo del PLC bajo el cursor.
- *  - Clic: la máquina se centra y escala al alto de la pantalla con gap,
- *    y avisa al contenedor para abrir el panel lateral de edición.
- *
- * La cámara (scale + traslación) anima entre vista general y foco con
- * ease-out; el bucle de dibujo es un requestAnimationFrame continuo que lee
- * el estado actual por refs (los snapshots llegan cada pollIntervalMs).
- */
+import type { Machine, Snapshot } from "../api/backend";
+import { asBool, formatValue } from "../lib/format";
 
 const WORLD_PAD = 60;
 const WORLD_GAP = 70;
@@ -23,7 +9,11 @@ const LABEL_H = 62;
 const FOCUS_GAP = 48;
 const ANIM_MS = 320;
 
-// Paleta (equivalente a los tokens --hmi-* de la librería).
+const MIN_SCALE = 0.05;
+const MAX_SCALE = 6;
+const CAM_PAD = 48;
+const CAM_EDGE = 80;
+
 const COLOR = {
         bg: "#0d1117",
         grid: "#161d27",
@@ -93,18 +83,41 @@ function layout(machines: Machine[]): World {
 function overviewCamera(vw: number, vh: number, world: World): Camera {
         const margin = 48;
         const raw = Math.min((vw - margin * 2) / world.w, (vh - margin * 2) / world.h);
-        const scale = Math.min(Math.max(raw, 0.05), 1.5);
+        const scale = Math.min(Math.max(raw, MIN_SCALE), 1.5);
         return { scale, tx: (vw - world.w * scale) / 2, ty: (vh - world.h * scale) / 2 };
 }
 
 function focusCamera(vw: number, vh: number, p: Placed): Camera {
-        // La máquina se escala al alto de la pantalla dejando el gap, sin
-        // desbordar el ancho disponible.
-        const scale = Math.min((vh - FOCUS_GAP * 2) / p.h, (vw - FOCUS_GAP * 2) / p.w);
+        const raw = Math.min((vh - FOCUS_GAP * 2) / p.h, (vw - FOCUS_GAP * 2) / p.w);
+        const scale = Math.min(Math.max(raw, MIN_SCALE), MAX_SCALE);
         return {
                 scale,
                 tx: vw / 2 - (p.x + p.w / 2) * scale,
                 ty: vh / 2 - (p.y + p.h / 2) * scale,
+        };
+}
+
+function clampAxis(tx: number, view: number, worldSize: number, scale: number): number {
+        const screen = worldSize * scale;
+        let lo: number;
+        let hi: number;
+        if (screen + CAM_PAD * 2 <= view) {
+                lo = CAM_PAD;
+                hi = view - CAM_PAD - screen;
+        } else {
+                lo = CAM_EDGE - screen;
+                hi = view - CAM_EDGE;
+        }
+        if (lo > hi) return (view - screen) / 2;
+        return Math.min(hi, Math.max(lo, tx));
+}
+
+function clampCamera(cam: Camera, vw: number, vh: number, world: World): Camera {
+        const scale = Math.min(Math.max(cam.scale, MIN_SCALE), MAX_SCALE);
+        return {
+                scale,
+                tx: clampAxis(cam.tx, vw, world.w, scale),
+                ty: clampAxis(cam.ty, vh, world.h, scale),
         };
 }
 
@@ -131,7 +144,6 @@ function lerpCamera(from: Camera, to: Camera, k: number): Camera {
         };
 }
 
-/** Tags numéricas representativas para los readouts de la vista de foco. */
 function readoutTags(machine: Machine) {
         const numeric = machine.tags.filter((t) => t.dataType !== "bool");
         const proceso = numeric.filter((t) => t.group === "Proceso");
@@ -143,15 +155,18 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
         const canvasRef = useRef<HTMLCanvasElement | null>(null);
         const [hover, setHover] = useState<HoverInfo | null>(null);
 
-        // Estado vivo para el bucle de dibujo (se actualiza en cada render).
         const stateRef = useRef({ machines, snapshot, focusedId, hover });
         stateRef.current = { machines, snapshot, focusedId, hover };
 
         const cameraRef = useRef<Camera>({ scale: 1, tx: 0, ty: 0 });
         const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
         const worldRef = useRef<World>({ items: [], w: 0, h: 0 });
+        const manualRef = useRef(false);
+        const resetTickRef = useRef(0);
+        const panRef = useRef<{ id: number; startX: number; startY: number; moved: boolean; cam: Camera } | null>(null);
+        const vpRef = useRef({ w: 0, h: 0 });
+        const zoomRef = useRef<HTMLSpanElement | null>(null);
 
-        // Caché de imágenes de máquina.
         useEffect(() => {
                 for (const m of machines) {
                         if (imagesRef.current.has(m.id)) continue;
@@ -161,7 +176,6 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
                 }
         }, [machines]);
 
-        // Bucle principal: resize + cámara animada + dibujo.
         useEffect(() => {
                 const canvas = canvasRef.current;
                 const wrap = wrapRef.current;
@@ -180,6 +194,7 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
                         canvas.height = Math.max(1, Math.round(vh * dpr));
                         canvas.style.width = `${vw}px`;
                         canvas.style.height = `${vh}px`;
+                        vpRef.current = { w: vw, h: vh };
                 };
                 resize();
 
@@ -188,6 +203,8 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
 
                 let raf = 0;
                 let camKey = "";
+                let vpKey = "";
+                let lastTick = resetTickRef.current;
                 let from: Camera = cameraRef.current;
                 let target: Camera = cameraRef.current;
                 let animStart = performance.now();
@@ -210,23 +227,49 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
                         }
 
                         const focusedItem = world.items.find((p) => p.machine.id === focus) ?? null;
-                        const key = `${focus}|${vw}x${vh}|${ms.map((m) => `${m.id}:${m.size.width}x${m.size.height}`).join(",")}`;
-                        if (key !== camKey) {
+                        const contentKey = `${focus}|${ms.map((m) => `${m.id}:${m.size.width}x${m.size.height}`).join(",")}`;
+                        const sizeKey = `${vw}x${vh}`;
+                        const goal = focusedItem ? focusCamera(vw, vh, focusedItem) : overviewCamera(vw, vh, world);
+                        const tick = resetTickRef.current;
+
+                        if (tick !== lastTick || contentKey !== camKey) {
                                 from = cameraRef.current;
-                                target = focusedItem ? focusCamera(vw, vh, focusedItem) : overviewCamera(vw, vh, world);
+                                target = goal;
                                 animStart = now;
-                                camKey = key;
+                                manualRef.current = false;
+                                camKey = contentKey;
+                                vpKey = sizeKey;
+                                lastTick = tick;
+                        } else if (sizeKey !== vpKey) {
+                                vpKey = sizeKey;
+                                if (!manualRef.current) {
+                                        from = cameraRef.current;
+                                        target = goal;
+                                        animStart = now;
+                                }
                         }
-                        const k = easeOutCubic(Math.min(1, (now - animStart) / ANIM_MS));
-                        const cam = k >= 1 ? target : lerpCamera(from, target, k);
-                        cameraRef.current = cam;
+
+                        let cam: Camera;
+                        if (manualRef.current) {
+                                cam = cameraRef.current;
+                        } else {
+                                const k = easeOutCubic(Math.min(1, (now - animStart) / ANIM_MS));
+                                cam = k >= 1 ? target : lerpCamera(from, target, k);
+                                cameraRef.current = cam;
+                        }
+
+                        const zoomPct = `${Math.round(cam.scale * 100)}%`;
+                        if (zoomRef.current && zoomRef.current.textContent !== zoomPct) zoomRef.current.textContent = zoomPct;
+                        const zoomAttr = cam.scale.toFixed(3);
+                        if (wrap.dataset.zoom !== zoomAttr) wrap.dataset.zoom = zoomAttr;
+                        const panAttr = `${Math.round(cam.tx)},${Math.round(cam.ty)}`;
+                        if (wrap.dataset.pan !== panAttr) wrap.dataset.pan = panAttr;
 
                         const { scale, tx, ty } = cam;
                         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
                         ctx.fillStyle = COLOR.bg;
                         ctx.fillRect(0, 0, vw, vh);
 
-                        // Rejilla en espacio-mundo (se mueve y escala con la cámara).
                         const steps = [10, 20, 25, 50, 100, 200, 500];
                         const step = steps.find((s) => s * scale >= 30) ?? 500;
                         const x0 = (0 - tx) / scale;
@@ -262,7 +305,6 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
                                 ctx.save();
                                 ctx.globalAlpha = dimmed ? 0.16 : 1;
 
-                                // Cuerpo de la máquina
                                 const img = imagesRef.current.get(p.machine.id);
                                 if (img && img.complete && img.naturalWidth > 0) {
                                         ctx.drawImage(img, sx, sy, sw, sh);
@@ -279,7 +321,6 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
                                         ctx.fillText(p.machine.type, sx + sw / 2, sy + sh / 2);
                                 }
 
-                                // Contorno: hover/foco resaltados
                                 roundRectPath(ctx, sx, sy, sw, sh, 12);
                                 if (isFocus) {
                                         ctx.strokeStyle = COLOR.accent;
@@ -293,9 +334,17 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
                                 }
                                 ctx.stroke();
 
-                                // LEDs de estado (run / alarma)
-                                const run = asBool(snap.values?.[p.machine.statusTags?.run ?? ""]);
                                 const alarm = asBool(snap.values?.[p.machine.statusTags?.alarm ?? ""]);
+                                if (alarm) {
+                                        roundRectPath(ctx, sx - 4, sy - 4, sw + 8, sh + 8, 15);
+                                        ctx.globalAlpha = dimmed ? 0.16 : alarmPulse;
+                                        ctx.strokeStyle = COLOR.alarm;
+                                        ctx.lineWidth = 3;
+                                        ctx.stroke();
+                                        ctx.globalAlpha = dimmed ? 0.16 : 1;
+                                }
+
+                                const run = asBool(snap.values?.[p.machine.statusTags?.run ?? ""]);
                                 const ledY = sy + 16;
                                 ctx.lineWidth = 2;
                                 ctx.fillStyle = run ? COLOR.ok : COLOR.borderStrong;
@@ -316,7 +365,6 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
                                         ctx.fill();
                                 }
 
-                                // Etiqueta bajo la máquina
                                 const fs = Math.min(26, Math.max(12, Math.round(13 * Math.min(scale, 2))));
                                 ctx.textAlign = "center";
                                 ctx.fillStyle = COLOR.text;
@@ -326,7 +374,6 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
                                 ctx.font = `${Math.round(fs * 0.72)}px "Nunito", sans-serif`;
                                 ctx.fillText(p.machine.id, sx + sw / 2, sy + sh + fs * 1.75 + 6);
 
-                                // En la vista de foco: readouts numéricos tipo PanelView
                                 if (isFocus && !dimmed) {
                                         const tags = readoutTags(p.machine);
                                         const metrics = tags.map((t) => {
@@ -360,7 +407,7 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
                                 ctx.restore();
                         }
 
-                        canvas.style.cursor = hv ? "pointer" : "default";
+                        canvas.style.cursor = panRef.current?.moved ? "grabbing" : hv ? "pointer" : manualRef.current ? "grab" : "default";
                 };
 
                 raf = requestAnimationFrame(draw);
@@ -380,15 +427,70 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
                 return null;
         };
 
-        const localPoint = (e: MouseEvent) => {
+        const localPoint = (e: { clientX: number; clientY: number }) => {
                 const rect = wrapRef.current?.getBoundingClientRect();
                 if (!rect) return null;
                 return { x: e.clientX - rect.left, y: e.clientY - rect.top };
         };
 
-        const handleMove = (e: MouseEvent) => {
+        const zoomAt = (pt: { x: number; y: number }, factor: number) => {
+                const cam = cameraRef.current;
+                const next = Math.min(Math.max(cam.scale * factor, MIN_SCALE), MAX_SCALE);
+                if (next === cam.scale) return;
+                const wx = (pt.x - cam.tx) / cam.scale;
+                const wy = (pt.y - cam.ty) / cam.scale;
+                manualRef.current = true;
+                setHover(null);
+                cameraRef.current = clampCamera(
+                        { scale: next, tx: pt.x - wx * next, ty: pt.y - wy * next },
+                        vpRef.current.w,
+                        vpRef.current.h,
+                        worldRef.current,
+                );
+        };
+
+        const zoomButton = (factor: number) => {
+                zoomAt({ x: vpRef.current.w / 2, y: vpRef.current.h / 2 }, factor);
+        };
+
+        const resetView = () => {
+                resetTickRef.current += 1;
+                setHover(null);
+                onFocus(null);
+        };
+
+        const handlePointerDown = (e: PointerEvent) => {
+                if (e.button !== 0 && e.button !== 1) return;
                 const pt = localPoint(e);
                 if (!pt) return;
+                panRef.current = { id: e.pointerId, startX: pt.x, startY: pt.y, moved: false, cam: cameraRef.current };
+                canvasRef.current?.setPointerCapture?.(e.pointerId);
+        };
+
+        const handlePointerMove = (e: PointerEvent) => {
+                const pt = localPoint(e);
+                if (!pt) return;
+
+                const pan = panRef.current;
+                if (pan && pan.id === e.pointerId) {
+                        const dx = pt.x - pan.startX;
+                        const dy = pt.y - pan.startY;
+                        if (!pan.moved && Math.hypot(dx, dy) > 4) {
+                                pan.moved = true;
+                                setHover(null);
+                        }
+                        if (pan.moved) {
+                                manualRef.current = true;
+                                cameraRef.current = clampCamera(
+                                        { scale: pan.cam.scale, tx: pan.cam.tx + dx, ty: pan.cam.ty + dy },
+                                        vpRef.current.w,
+                                        vpRef.current.h,
+                                        worldRef.current,
+                                );
+                                return;
+                        }
+                }
+
                 const hit = hitTest(pt.x, pt.y);
                 const current = stateRef.current.hover;
                 if (!hit) {
@@ -399,17 +501,37 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
                 setHover({ machine: hit.machine, x: pt.x, y: pt.y });
         };
 
-        const handleClick = (e: MouseEvent) => {
+        const handlePointerUp = (e: PointerEvent) => {
+                const pan = panRef.current;
+                if (!pan || pan.id !== e.pointerId) return;
+                canvasRef.current?.releasePointerCapture?.(e.pointerId);
+                panRef.current = null;
+                if (pan.moved) return;
+
                 const pt = localPoint(e);
                 if (!pt) return;
                 const hit = hitTest(pt.x, pt.y);
                 if (hit) {
-                        if (hover) setHover(null);
+                        if (stateRef.current.hover) setHover(null);
                         onFocus(hit.machine.id);
                 } else {
                         onFocus(null);
                 }
         };
+
+        useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const onWheel = (e: WheelEvent) => {
+                        e.preventDefault();
+                        const pt = localPoint(e);
+                        if (!pt) return;
+                        const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+                        zoomAt(pt, Math.exp(-dy * 0.0016));
+                };
+                canvas.addEventListener("wheel", onWheel, { passive: false });
+                return () => canvas.removeEventListener("wheel", onWheel);
+        }, []);
 
         const pop_pos =
                 hover &&
@@ -420,7 +542,33 @@ export function MachineCanvas({ machines, snapshot, focusedId, onFocus }: Machin
 
         return (
                 <div class="hm-stage" ref={wrapRef}>
-                        <canvas ref={canvasRef} onMouseMove={handleMove} onMouseLeave={() => setHover(null)} onClick={handleClick} />
+                        <canvas
+                                ref={canvasRef}
+                                onPointerDown={handlePointerDown}
+                                onPointerMove={handlePointerMove}
+                                onPointerUp={handlePointerUp}
+                                onPointerCancel={() => (panRef.current = null)}
+                                onPointerLeave={() => setHover(null)}
+                        />
+                        <div class="hm-stage__hud">
+                                <button type="button" class="hm-hud__btn" title="Alejar (rueda del ratón)" onClick={() => zoomButton(1 / 1.3)}>
+                                        −
+                                </button>
+                                <span class="hm-hud__zoom" ref={zoomRef}>
+                                        100%
+                                </span>
+                                <button type="button" class="hm-hud__btn" title="Acercar (rueda del ratón)" onClick={() => zoomButton(1.3)}>
+                                        +
+                                </button>
+                                <button
+                                        type="button"
+                                        class="hm-hud__btn hm-hud__btn--reset"
+                                        title="Vista general (reset zoom y posición)"
+                                        onClick={resetView}
+                                >
+                                        ⌂
+                                </button>
+                        </div>
                         {hover && pop_pos && (
                                 <Popover open x={pop_pos.x} y={pop_pos.y}>
                                         <div class="hm-pop__head">

@@ -21,13 +21,7 @@ export function Panel({ title, subtitle, onClose, closeLabel = "Cerrar", childre
                                         {subtitle && <span class="hmi-panel__subtitle">{subtitle}</span>}
                                 </div>
                                 {onClose && (
-                                        <button
-                                                type="button"
-                                                class="hmi-panel__close"
-                                                onClick={onClose}
-                                                title={closeLabel}
-                                                aria-label={closeLabel}
-                                        >
+                                        <button type="button" class="hmi-panel__close" onClick={onClose} title={closeLabel} aria-label={closeLabel}>
                                                 ✕
                                         </button>
                                 )}

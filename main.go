@@ -2,6 +2,8 @@ package main
 
 import (
 	"embed"
+	"flag"
+	"fmt"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -12,10 +14,20 @@ import (
 var assets embed.FS
 
 func main() {
-	// Create an instance of the app structure
+
+	flag.Parse()
+
 	app := NewApp()
 
-	// Create application with options
+	if err := app.initAuth(); err != nil {
+		fmt.Printf("Advertencia: autenticación no disponible: %v\n", err)
+	}
+
+	if app.audit == nil {
+		app.audit = &auditLog{path: auditFilePath}
+		app.audit.load()
+	}
+
 	err := wails.Run(&options.App{
 		Title:  "myproject",
 		Width:  1024,

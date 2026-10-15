@@ -1,2 +1,18 @@
-export { GetMachines, GetSnapshot, WriteTag, Greet } from "./wailsjs/go/main/App.js";
+export {
+        DeleteRecipe,
+        DeleteUser,
+        GetAudit,
+        GetMachines,
+        GetRecipes,
+        GetRuntimeFlags,
+        GetSession,
+        GetSnapshot,
+        ListUsers,
+        Login,
+        Logout,
+        SaveMachineConfig,
+        SaveRecipe,
+        SetUser,
+        WriteTag,
+} from "./wailsjs/go/main/App.js";
 export type { main } from "./wailsjs/go/models.js";

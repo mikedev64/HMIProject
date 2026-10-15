@@ -51,18 +51,14 @@ export const IndependentSelections: Story = {
                                 }}
                         >
                                 <div>
-                                        <p style={{ color: "var(--hmi-text-faint)", fontSize: 11, margin: "0 0 6px" }}>
-                                                GRUPO
-                                        </p>
+                                        <p style={{ color: "var(--hmi-text-faint)", fontSize: 11, margin: "0 0 6px" }}>GRUPO</p>
                                         <List value={group} onselect={setGroup} ariaLabel="Grupo">
                                                 <ListItem value="a">Grupo A</ListItem>
                                                 <ListItem value="b">Grupo B</ListItem>
                                         </List>
                                 </div>
                                 <div>
-                                        <p style={{ color: "var(--hmi-text-faint)", fontSize: 11, margin: "0 0 6px" }}>
-                                                MÁQUINA
-                                        </p>
+                                        <p style={{ color: "var(--hmi-text-faint)", fontSize: 11, margin: "0 0 6px" }}>MÁQUINA</p>
                                         <List value={machine} onselect={setMachine} ariaLabel="Máquina">
                                                 <ListItem value="mixer">Mezcladora</ListItem>
                                                 <ListItem value="pump">Bomba</ListItem>

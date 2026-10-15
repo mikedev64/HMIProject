@@ -1,0 +1,51 @@
+.hmi-tabs {
+        display: flex;
+        align-items: stretch;
+        gap: 2px;
+        border-bottom: 1px solid var(--hmi-border);
+        background: var(--hmi-surface-sunken);
+        padding: 0 6px;
+}
+
+.hmi-tab {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 12px 8px;
+        font: 700 12px/1 var(--hmi-font);
+        color: var(--hmi-text-dim);
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        white-space: nowrap;
+        transition:
+                color 0.15s ease-out,
+                border-color 0.15s ease-out;
+}
+
+.hmi-tab:hover {
+        color: var(--hmi-text);
+}
+
+.hmi-tab.is-selected {
+        color: var(--hmi-accent);
+        border-bottom-color: var(--hmi-accent);
+}
+
+.hmi-tab.is-disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+}
+
+.hmi-tab__badge {
+        font-family: var(--hmi-mono);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 99px;
+        background: color-mix(in srgb, var(--hmi-danger) 22%, transparent);
+        color: var(--hmi-danger);
+        border: 1px solid color-mix(in srgb, var(--hmi-danger) 45%, transparent);
+}

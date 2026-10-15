@@ -1,76 +1,94 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
-import { Badge, Field, List, ListItem, NumberInput, Panel, Switch } from "interface-components";
-import type { HMIConfig, Snapshot, TagDef } from "./backend";
-import { EMPTY_SNAPSHOT, getMachines, getSnapshot, isPreviewMode, onSnapshot, writeTag } from "./backend";
-import { MachineCanvas } from "./machine-canvas";
-import { asBool, asNumber, formatTime } from "./format";
-
-/*
- * HMI estilo PanelView:
- *
- *  - El canvas (machine-canvas) dibuja las máquinas y gestiona hover/foco.
- *  - Al hacer clic en una máquina se abre este panel lateral con sus tags
- *    mapeados: rw se edita (Switch/NumberInput), ro se muestra bloqueado.
- *  - Los datos llegan de la capa backend (evento Wails "plc:update" o
- *    polling directo en modo preview).
- */
-
-interface Notice {
-        tone: "ok" | "error";
-        text: string;
-}
+import { useEffect, useState } from "preact/hooks";
+import { Badge, Button, KeypadProvider, List, ListItem, Panel, Tab, Tabs } from "interface-components";
+import { isPreviewMode } from "./api/backend";
+import { ADMIN_RANK, OPERATOR_RANK, levelLabel, levelRank } from "./lib/levels";
+import { machineTabs } from "./lib/hmi-spec";
+import { formatTime } from "./lib/format";
+import { exportSnapshotCsv } from "./lib/csv";
+import { useBackend } from "./hooks/use-backend";
+import { useConfig } from "./hooks/use-config";
+import { useMachines } from "./hooks/use-machines";
+import { usePlcSnapshot } from "./hooks/use-plc-snapshot";
+import { useSession } from "./hooks/use-session";
+import { useSessionTimeout } from "./hooks/use-session-timeout";
+import { useAlarmHistory } from "./hooks/use-alarm-history";
+import { useTrendHistory } from "./hooks/use-trend-history";
+import { useWrites } from "./hooks/use-writes";
+import { useFullscreen } from "./hooks/use-fullscreen";
+import { MachineCanvas } from "./components/machine-canvas";
+import { Faceplate } from "./components/faceplate";
+import { AlarmBanner } from "./components/alarm-banner";
+import { AlarmLog } from "./components/alarm-log";
+import { LoginScreen } from "./components/login";
+import { AuditLog } from "./components/audit-log";
+import { ConfigWorkspace } from "./components/config-editor";
 
 export function App() {
-        const [config, setConfig] = useState<HMIConfig | null>(null);
-        const [snapshot, setSnapshot] = useState<Snapshot>(EMPTY_SNAPSHOT);
-        const [focusedId, setFocusedId] = useState<string | null>(null);
-        const [loadError, setLoadError] = useState<string | null>(null);
-        const [notice, setNotice] = useState<Notice | null>(null);
+        const backend = useBackend();
+        const { config, error: loadError, refresh: reloadConfig } = useConfig(backend);
+        const { session, flags, ready, login, logout } = useSession(backend);
+        const { machines, selected: focused, selectedId: focusedId, select: setFocusedId } = useMachines(config);
+        const { snapshot, setSnapshot } = usePlcSnapshot(backend);
+        const { events: alarmEvents, activeCount, clear: clearAlarms, ack: ackAlarm, ackAll: ackAllAlarms } = useAlarmHistory(snapshot, machines);
+        const trendHistory = useTrendHistory(snapshot);
+        const { notice, setNotice, write, pulseAck } = useWrites(backend, setSnapshot);
+        const { fullscreen, toggle: toggleFullscreen } = useFullscreen();
 
-        useEffect(() => {
-                let cancelled = false;
-                getMachines()
-                        .then((cfg) => {
-                                if (!cancelled) setConfig(cfg);
-                        })
-                        .catch((e) => setLoadError(e?.message ? String(e.message) : String(e)));
+        const [panelTab, setPanelTab] = useState<string>("control");
+        const [alarmLogOpen, setAlarmLogOpen] = useState(false);
+        const [auditOpen, setAuditOpen] = useState(false);
+        const [configOpen, setConfigOpen] = useState(false);
 
-                const unsubscribe = onSnapshot((snap) => setSnapshot(snap));
-                getSnapshot()
-                        .then((snap) => setSnapshot(snap))
-                        .catch(() => {});
+        const requireLogin = config?.security?.requireLogin !== false;
+        const canWrite = !requireLogin || levelRank(session.level) >= OPERATOR_RANK;
+        const isAdmin = !requireLogin || levelRank(session.level) >= ADMIN_RANK;
 
-                return () => {
-                        cancelled = true;
-                        unsubscribe();
-                };
-        }, []);
+        useSessionTimeout(session, config?.security?.sessionTimeoutMin ?? 0, logout);
 
-        // Escape deja la máquina (equivale al botón ✕ del panel).
         useEffect(() => {
                 const onKey = (e: KeyboardEvent) => {
-                        if (e.key === "Escape") setFocusedId(null);
+                        if (e.key !== "Escape") return;
+                        if (configOpen) setConfigOpen(false);
+                        else if (auditOpen) setAuditOpen(false);
+                        else if (alarmLogOpen) setAlarmLogOpen(false);
+                        else setFocusedId(null);
                 };
                 window.addEventListener("keydown", onKey);
                 return () => window.removeEventListener("keydown", onKey);
-        }, []);
+        }, [configOpen, auditOpen, alarmLogOpen]);
 
-        // El aviso de escritura es por máquina enfocada.
-        useEffect(() => setNotice(null), [focusedId]);
-
-        const machines = config?.machines ?? [];
-        const focused = machines.find((m) => m.id === focusedId) ?? null;
-
-        const write = async (tag: TagDef, value: number | boolean) => {
+        useEffect(() => {
                 setNotice(null);
-                try {
-                        const snap = await writeTag(tag.address, value);
-                        setSnapshot(snap);
-                        setNotice({ tone: "ok", text: `${tag.address} ← ${String(value)}` });
-                } catch (e) {
-                        const message = e instanceof Error ? e.message : String(e);
-                        setNotice({ tone: "error", text: message });
-                }
+                setPanelTab(focused ? (machineTabs(focused)[0]?.id ?? "control") : "control");
+        }, [focusedId]);
+
+        const handleAck = (id: number) => {
+                const ev = alarmEvents.find((e) => e.id === id);
+                ackAlarm(id);
+                if (ev && ev.clearedTs === null) void pulseAck(ev.machineId, machines, canWrite);
+        };
+
+        const handleAckAll = () => {
+                const machineIds = new Set(alarmEvents.filter((e) => e.clearedTs === null && e.ackedTs === null).map((e) => e.machineId));
+                ackAllAlarms();
+                for (const machineId of machineIds) void pulseAck(machineId, machines, canWrite);
+        };
+
+        const tabs = focused ? machineTabs(focused) : [];
+        const activeTab = tabs.find((t) => t.id === panelTab) ?? tabs[0];
+        const focusedAlarmCount = focused ? alarmEvents.filter((e) => e.machineId === focused.id && e.clearedTs === null).length : 0;
+
+        const exportSnapshot = () => {
+                const count = exportSnapshotCsv(machines, snapshot);
+                setNotice({ tone: "ok", text: `CSV exportado (${count} tags)` });
+        };
+
+        const handleLogout = () => {
+                setAlarmLogOpen(false);
+                setAuditOpen(false);
+                setConfigOpen(false);
+                setFocusedId(null);
+                void logout();
         };
 
         if (loadError) {
@@ -82,7 +100,15 @@ export function App() {
                 );
         }
 
-        if (!config) {
+        if (config && ready && requireLogin && !session.authenticated) {
+                return (
+                        <div class="hm-root hm-root--locked">
+                                <LoginScreen onLogin={login} />
+                        </div>
+                );
+        }
+
+        if (!config || !ready) {
                 return (
                         <div class="hm-state">
                                 <p>Cargando mapa HMI…</p>
@@ -90,134 +116,175 @@ export function App() {
                 );
         }
 
+        const bannerCfg = config.ui?.alarmBanner;
+
         return (
-                <div class="hm-root">
-                        <header class="hm-top">
-                                <div class="hm-brand">
-                                        <span class="hm-brand__mark">◆</span>
-                                        <span class="hm-brand__name">HMInot</span>
-                                        <span class="hm-brand__sub">PanelView</span>
-                                </div>
+                <KeypadProvider enabled={!flags.onlyMouse}>
+                        <div class="hm-root">
+                                <header class="hm-top">
+                                        <div class="hm-brand">
+                                                <span class="hm-brand__mark">◆</span>
+                                                <span class="hm-brand__name">HMInot</span>
+                                                <span class="hm-brand__sub">PanelView</span>
+                                        </div>
 
-                                <List
-                                        orientation="horizontal"
-                                        ariaLabel="Máquinas"
-                                        value={focusedId ?? ""}
-                                        onselect={(id) => setFocusedId((current) => (current === id ? null : id))}
-                                >
-                                        {machines.map((m) => (
-                                                <ListItem key={m.id} value={m.id} title={m.name}>
-                                                        {m.name}
-                                                </ListItem>
-                                        ))}
-                                </List>
-
-                                <div class="hm-plc">
-                                        {isPreviewMode && <Badge tone="warn">PREVIEW · SIN WAILS</Badge>}
-                                        <Badge tone={snapshot.connected ? "ok" : "danger"} dot title={snapshot.error}>
-                                                {config.plc.name}
-                                        </Badge>
-                                        <span class="hm-plc__ts">{formatTime(snapshot.ts)}</span>
-                                </div>
-                        </header>
-
-                        {!snapshot.connected && (
-                                <div class="hm-banner">
-                                        {snapshot.ts === 0
-                                                ? "Conectando con el PLC…"
-                                                : `Sin conexión con el PLC: ${snapshot.error ?? "sin respuesta"} · ¿está el simulador en marcha?`}
-                                </div>
-                        )}
-
-                        <div class="hm-body">
-                                <MachineCanvas machines={machines} snapshot={snapshot} focusedId={focusedId} onFocus={setFocusedId} />
-
-                                {focused && (
-                                        <Panel
-                                                title={focused.name}
-                                                subtitle={`${focused.type} · ${focused.id}`}
-                                                closeLabel="Dejar máquina"
-                                                onClose={() => setFocusedId(null)}
-                                                footer={
-                                                        notice ? (
-                                                                <span class={`hm-notice hm-notice--${notice.tone}`}>{notice.text}</span>
-                                                        ) : snapshot.connected ? (
-                                                                `PLC en línea · lectura ${formatTime(snapshot.ts)}`
-                                                        ) : (
-                                                                <span class="hm-notice hm-notice--error">Sin conexión con el PLC</span>
-                                                        )
-                                                }
+                                        <List
+                                                orientation="horizontal"
+                                                ariaLabel="Máquinas"
+                                                value={focusedId ?? ""}
+                                                onselect={(id) => setFocusedId(focusedId === id ? null : id)}
                                         >
-                                                <TagGroups machine={focused} snapshot={snapshot} onWrite={write} />
-                                        </Panel>
+                                                {machines.map((m) => (
+                                                        <ListItem key={m.id} value={m.id} title={m.name}>
+                                                                {m.name}
+                                                        </ListItem>
+                                                ))}
+                                        </List>
+
+                                        <div class="hm-tools">
+                                                <Button size="sm" variant="ghost" title="Pantalla completa" onClick={toggleFullscreen}>
+                                                        {fullscreen ? "⤢" : "⛶"}
+                                                </Button>
+                                                <Button size="sm" variant="ghost" title="Exportar snapshot a CSV" onClick={exportSnapshot}>
+                                                        ⤓ CSV
+                                                </Button>
+                                                <button
+                                                        type="button"
+                                                        class="hm-alarmlog__btn"
+                                                        title="Registro de alarmas"
+                                                        aria-pressed={alarmLogOpen}
+                                                        onClick={() => setAlarmLogOpen((v) => !v)}
+                                                >
+                                                        <Badge tone={activeCount > 0 ? "danger" : "neutral"} dot>
+                                                                {activeCount > 0 ? `${activeCount} ALARMAS` : "SIN ALARMAS"}
+                                                        </Badge>
+                                                </button>
+                                                {isAdmin && (
+                                                        <>
+                                                                <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        title="Registro de auditoría: quién escribió qué (solo admin)"
+                                                                        aria-pressed={auditOpen}
+                                                                        onClick={() => setAuditOpen((v) => !v)}
+                                                                >
+                                                                        ≡ Auditoría
+                                                                </Button>
+                                                                <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        title="Configuración de máquinas y usuarios (solo admin)"
+                                                                        aria-pressed={configOpen}
+                                                                        onClick={() => setConfigOpen(true)}
+                                                                >
+                                                                        ⚙ Config
+                                                                </Button>
+                                                        </>
+                                                )}
+                                        </div>
+
+                                        <div class="hm-user" title={`Perfil: ${levelLabel(session.level)}`}>
+                                                <Badge tone="info">{levelLabel(session.level)}</Badge>
+                                                <span class="hm-user__name">{session.username}</span>
+                                                <Button size="sm" variant="ghost" title="Cerrar sesión" onClick={handleLogout}>
+                                                        Salir
+                                                </Button>
+                                        </div>
+
+                                        <div class="hm-plc">
+                                                {isPreviewMode && <Badge tone="warn">PREVIEW · SIN WAILS</Badge>}
+                                                <Badge tone={snapshot.connected ? "ok" : "danger"} dot title={snapshot.error}>
+                                                        {config.plc.name}
+                                                </Badge>
+                                                {snapshot.eip && (
+                                                        <span
+                                                                class={`hm-eip${snapshot.eip.connected ? "" : " is-down"}`}
+                                                                title={`Sesión EtherNet/IP ${snapshot.eip.endpoint} · RPI ${snapshot.eip.rpiMs} ms · sesión ${snapshot.eip.session} · conn O→T ${snapshot.eip.o2t} / T→O ${snapshot.eip.t2o} · serie ${snapshot.eip.serial} · recibidos ↓${snapshot.eip.packetsRx} ↑${snapshot.eip.packetsTx}${snapshot.eip.lost > 0 ? ` · perdidos ${snapshot.eip.lost}` : ""}`}
+                                                        >
+                                                                <span class="hm-eip__dot" />
+                                                                EIP · <span class="hm-eip__seq">seq {snapshot.eip.seq}</span>
+                                                                {snapshot.eip.lost > 0 && <span class="hm-eip__lost">+{snapshot.eip.lost}</span>}
+                                                        </span>
+                                                )}
+                                        </div>
+                                </header>
+
+                                {alarmLogOpen && <AlarmLog events={alarmEvents} onClose={() => setAlarmLogOpen(false)} onClear={clearAlarms} />}
+                                {auditOpen && isAdmin && <AuditLog onClose={() => setAuditOpen(false)} />}
+
+                                {bannerCfg?.enabled !== false && (
+                                        <AlarmBanner
+                                                events={alarmEvents}
+                                                maxItems={bannerCfg?.maxItems}
+                                                canAck={canWrite}
+                                                onAck={handleAck}
+                                                onAckAll={handleAckAll}
+                                        />
+                                )}
+
+                                {!snapshot.connected && (
+                                        <div class="hm-banner">
+                                                {snapshot.ts === 0
+                                                        ? "Conectando con el PLC…"
+                                                        : `Sin conexión con el PLC: ${snapshot.error ?? "sin respuesta"} · ¿está el simulador en marcha?`}
+                                        </div>
+                                )}
+
+                                <div class="hm-body">
+                                        <MachineCanvas machines={machines} snapshot={snapshot} focusedId={focusedId} onFocus={setFocusedId} />
+
+                                        {focused && activeTab && (
+                                                <Panel
+                                                        title={focused.name}
+                                                        subtitle={`${focused.type} · ${focused.id}`}
+                                                        closeLabel="Dejar máquina"
+                                                        onClose={() => setFocusedId(null)}
+                                                        footer={
+                                                                notice ? (
+                                                                        <span class={`hm-notice hm-notice--${notice.tone}`}>{notice.text}</span>
+                                                                ) : snapshot.connected ? (
+                                                                        `PLC en línea · lectura ${formatTime(snapshot.ts)}`
+                                                                ) : (
+                                                                        <span class="hm-notice hm-notice--error">Sin conexión con el PLC</span>
+                                                                )
+                                                        }
+                                                >
+                                                        <Tabs value={panelTab} onselect={setPanelTab} ariaLabel="Vistas de la máquina">
+                                                                {tabs.map((t) => (
+                                                                        <Tab
+                                                                                key={t.id}
+                                                                                value={t.id}
+                                                                                badge={
+                                                                                        t.id === "alarmas" && focusedAlarmCount > 0
+                                                                                                ? String(focusedAlarmCount)
+                                                                                                : undefined
+                                                                                }
+                                                                        >
+                                                                                {t.title}
+                                                                        </Tab>
+                                                                ))}
+                                                        </Tabs>
+                                                        <div class="hm-panel__content">
+                                                                <Faceplate
+                                                                        machine={focused}
+                                                                        tab={activeTab}
+                                                                        snapshot={snapshot}
+                                                                        history={trendHistory}
+                                                                        events={alarmEvents}
+                                                                        canWrite={canWrite}
+                                                                        level={session.level}
+                                                                        requireLogin={requireLogin}
+                                                                        onWrite={(tag, value) => void write(tag.address, value)}
+                                                                />
+                                                        </div>
+                                                </Panel>
+                                        )}
+                                </div>
+
+                                {configOpen && isAdmin && (
+                                        <ConfigWorkspace config={config} onClose={() => setConfigOpen(false)} onConfigSaved={reloadConfig} />
                                 )}
                         </div>
-                </div>
-        );
-}
-
-function TagGroups({
-        machine,
-        snapshot,
-        onWrite,
-}: {
-        machine: HMIConfig["machines"][number];
-        snapshot: Snapshot;
-        onWrite: (tag: TagDef, value: number | boolean) => void;
-}) {
-        // Los tags se agrupan por su "group" del mapa, respetando el orden.
-        const groups = useMemo(() => {
-                const map = new Map<string, TagDef[]>();
-                for (const tag of machine.tags) {
-                        const key = tag.group ?? "General";
-                        const list = map.get(key);
-                        if (list) list.push(tag);
-                        else map.set(key, [tag]);
-                }
-                return [...map.entries()];
-        }, [machine]);
-
-        return (
-                <>
-                        {groups.map(([name, tags]) => (
-                                <section class="hm-group" key={name}>
-                                        <h3 class="hm-group__title">{name}</h3>
-                                        {tags.map((tag) => {
-                                                const raw = snapshot.values?.[tag.address];
-                                                const readOnly = tag.access !== "rw";
-                                                return (
-                                                        <Field
-                                                                key={tag.address}
-                                                                label={tag.label}
-                                                                address={tag.address}
-                                                                unit={tag.unit}
-                                                                access={readOnly ? "ro" : "rw"}
-                                                                hint={readOnly ? "Solo lectura" : undefined}
-                                                                disabled={readOnly}
-                                                        >
-                                                                {tag.dataType === "bool" ? (
-                                                                        <Switch
-                                                                                checked={asBool(raw)}
-                                                                                disabled={readOnly}
-                                                                                oncommit={(v) => onWrite(tag, v)}
-                                                                        />
-                                                                ) : tag.dataType === "string" ? (
-                                                                        <span class="hm-readonly">{String(raw ?? "—")}</span>
-                                                                ) : (
-                                                                        <NumberInput
-                                                                                value={asNumber(raw)}
-                                                                                min={tag.min}
-                                                                                max={tag.max}
-                                                                                step={tag.dataType === "int16" || tag.dataType === "int32" ? 1 : 0.1}
-                                                                                disabled={readOnly}
-                                                                                oncommit={(v) => onWrite(tag, v)}
-                                                                        />
-                                                                )}
-                                                        </Field>
-                                                );
-                                        })}
-                                </section>
-                        ))}
-                </>
+                </KeypadProvider>
         );
 }

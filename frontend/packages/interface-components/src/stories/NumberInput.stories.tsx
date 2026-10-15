@@ -20,9 +20,7 @@ export const Default: Story = {
                 return (
                         <div style={{ width: 220, background: "var(--hmi-surface)", padding: 16, borderRadius: 8 }}>
                                 <NumberInput value={v} min={0} max={250} oncommit={setV} />
-                                <p style={{ color: "var(--hmi-text-faint)", fontSize: 12, marginTop: 8 }}>
-                                        Valor: {v}
-                                </p>
+                                <p style={{ color: "var(--hmi-text-faint)", fontSize: 12, marginTop: 8 }}>Valor: {v}</p>
                         </div>
                 );
         },
@@ -34,9 +32,7 @@ export const WithStep: Story = {
                 return (
                         <div style={{ width: 220, background: "var(--hmi-surface)", padding: 16, borderRadius: 8 }}>
                                 <NumberInput value={v} min={0} max={3000} step={100} oncommit={setV} />
-                                <p style={{ color: "var(--hmi-text-faint)", fontSize: 12, marginTop: 8 }}>
-                                        Valor: {v} rpm
-                                </p>
+                                <p style={{ color: "var(--hmi-text-faint)", fontSize: 12, marginTop: 8 }}>Valor: {v} rpm</p>
                         </div>
                 );
         },

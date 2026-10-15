@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "plc": {
+    "name": "PLC-LINEA-01",
+    "endpoint": "eip://127.0.0.1:44818",
+    "pollIntervalMs": 500
+  },
+  "ui": {
+    "alarmBanner": {
+      "enabled": true,
+      "maxItems": 4
+    }
+  },
+  "security": {
+    "requireLogin": true,
+    "sessionTimeoutMin": 0
+  }
+}

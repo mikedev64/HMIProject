@@ -1,0 +1,4 @@
+[
+  { "name": "Arranque suave", "values": { "N7:10": 30 }, "updated": 0 },
+  { "name": "Producción normal", "values": { "N7:10": 60 }, "updated": 0 }
+]

@@ -1,81 +1,116 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+	"strings"
+	"sync"
 	"time"
 )
 
-// plcClient talks to the (simulated) PLC over HTTP. A real PanelView reaches
-// the controller through a driver (RSLinx / EtherNet-IP) and reads/writes
-// memory addresses directly; here the same address space is exposed over HTTP
-// so the HMI can poll it the same way: read on an interval, write on demand.
 type plcClient struct {
 	endpoint string
-	http     *http.Client
+
+	mu     sync.Mutex
+	eip    *eipClient
+	layout []eipTagSlot
+	pollMs int
 }
 
-func newPlcClient(endpoint string) *plcClient {
-	return &plcClient{
-		endpoint: endpoint,
-		http:     &http.Client{Timeout: 2 * time.Second},
+func newPlcClient(endpoint string, pollMs int) *plcClient {
+	addr := strings.TrimPrefix(endpoint, "eip://")
+	addr = strings.TrimPrefix(addr, "http://")
+	addr = strings.TrimPrefix(addr, "https://")
+	if i := strings.Index(addr, "/"); i >= 0 {
+		addr = addr[:i]
 	}
+	if addr == "" {
+		addr = "127.0.0.1:44818"
+	}
+	return &plcClient{endpoint: addr, pollMs: pollMs}
 }
 
-// readAll fetches the current value of every address in the PLC memory.
-func (c *plcClient) readAll() (map[string]any, int64, error) {
-	resp, err := c.http.Get(c.endpoint + "/tags")
-	if err != nil {
-		return nil, 0, err
+func (p *plcClient) setLayout(slots []eipTagSlot) {
+	p.mu.Lock()
+	p.layout = slots
+	if p.eip != nil {
+		p.eip.close()
+		p.eip = nil
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, 0, fmt.Errorf("PLC devolvió %d", resp.StatusCode)
-	}
-
-	var payload struct {
-		Values map[string]any `json:"values"`
-		Ts     int64          `json:"ts"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return nil, 0, err
-	}
-	return payload.Values, payload.Ts, nil
+	p.mu.Unlock()
 }
 
-// writeTag writes a value to a PLC memory address and returns the value the
-// PLC actually stored (it may clamp/round it).
-func (c *plcClient) writeTag(address string, value any) (any, error) {
-	body, err := json.Marshal(map[string]any{"address": address, "value": value})
-	if err != nil {
-		return nil, err
+func (p *plcClient) ensureConnection() bool {
+	p.mu.Lock()
+	if p.eip != nil && p.eip.info().Connected {
+		p.mu.Unlock()
+		return true
 	}
+	if p.eip == nil {
+		p.eip = newEIPClient(p.endpoint, p.layout, p.pollMs)
+	}
+	client := p.eip
+	p.mu.Unlock()
 
-	resp, err := c.http.Post(c.endpoint+"/write", "application/json", bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	raw, _ := io.ReadAll(resp.Body)
-
-	var ok struct {
-		Ok    bool   `json:"ok"`
-		Value any    `json:"value"`
-		Error string `json:"error"`
-	}
-	if err := json.Unmarshal(raw, &ok); err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK || !ok.Ok {
-		if ok.Error != "" {
-			return nil, fmt.Errorf("%s", ok.Error)
+	if err := client.connect(); err != nil {
+		p.mu.Lock()
+		if p.eip == client {
+			p.eip.close()
+			p.eip = nil
 		}
-		return nil, fmt.Errorf("escritura rechazada (%d)", resp.StatusCode)
+		p.mu.Unlock()
+		return false
 	}
-	return ok.Value, nil
+	return true
 }
+
+func (p *plcClient) readAll() (map[string]any, int64, eipConnInfo, error) {
+	p.mu.Lock()
+	client := p.eip
+	p.mu.Unlock()
+	if client == nil {
+		return nil, 0, eipConnInfo{Endpoint: p.endpoint}, fmt.Errorf("sin sesión EIP con el PLC")
+	}
+	client.mu.Lock()
+	values := client.values
+	lastRx := client.lastRx
+	client.mu.Unlock()
+	info := client.info()
+	if !info.Connected {
+		return values, lastRx.UnixMilli(), info, fmt.Errorf("sin paquetes implícitos del PLC (¿Forward Open caducado?)")
+	}
+
+	out := make(map[string]any, len(values))
+	for k, v := range values {
+		out[k] = v
+	}
+	return out, lastRx.UnixMilli(), info, nil
+}
+
+func (p *plcClient) writeTag(address string, dataType string, value any) (any, error) {
+	p.mu.Lock()
+	client := p.eip
+	p.mu.Unlock()
+	if client == nil {
+		return nil, fmt.Errorf("sin sesión EIP con el PLC")
+	}
+	if err := client.writeTag(address, dataType, value); err != nil {
+		return nil, err
+	}
+
+	stored, err := client.readTag(address)
+	if err != nil {
+		return value, nil
+	}
+	return stored, nil
+}
+
+func (p *plcClient) close() {
+	p.mu.Lock()
+	if p.eip != nil {
+		p.eip.close()
+		p.eip = nil
+	}
+	p.mu.Unlock()
+}
+
+var _ = time.Now

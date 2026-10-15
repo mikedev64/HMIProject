@@ -29,14 +29,7 @@ export interface ListProps {
         children?: ComponentChildren;
 }
 
-export function List({
-        value,
-        defaultvalue = null,
-        orientation = "vertical",
-        onselect,
-        ariaLabel,
-        children,
-}: ListProps) {
+export function List({ value, defaultvalue = null, orientation = "vertical", onselect, ariaLabel, children }: ListProps) {
         const [internal, setInternal] = useState<string | null>(defaultvalue);
         const controlled = value !== undefined;
         const selected = controlled ? value : internal;
@@ -48,11 +41,7 @@ export function List({
 
         return (
                 <ListContext.Provider value={{ selected, select }}>
-                        <ul
-                                class={`hmi-list hmi-list--${orientation}`}
-                                role="listbox"
-                                aria-label={ariaLabel}
-                        >
+                        <ul class={`hmi-list hmi-list--${orientation}`} role="listbox" aria-label={ariaLabel}>
                                 {children}
                         </ul>
                 </ListContext.Provider>

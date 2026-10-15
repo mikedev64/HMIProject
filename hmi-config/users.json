@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "algorithm": "pbkdf2-sha256",
+  "iterations": 100000,
+  "users": [
+    {
+      "username": "admin",
+      "level": "admin",
+      "salt": "MsPOJkiVa5X7TwUBno0tMw==",
+      "hash": "yH1VWZndXWZCSZvvR2OR8ykezskHZww0bLyZ16s/EJQ="
+    },
+    {
+      "username": "operador",
+      "level": "operator",
+      "salt": "B2spEpmwGSMFYoX3LpbVlQ==",
+      "hash": "iZFtX9LzJnPURR24u64fJitDC+xitNLR3nHFjFMEJME="
+    },
+    {
+      "username": "consulta",
+      "level": "viewer",
+      "salt": "gCBPMg5pEj+e1SgP8jJfMg==",
+      "hash": "/ziqWqDKJLoUkCElp6TH/qhMl18u6peBzXaSTE04H1U="
+    }
+  ]
+}

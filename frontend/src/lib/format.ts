@@ -1,14 +1,9 @@
-/*
- * Formateo de valores del PLC para mostrar en la UI (popover, panel, readouts).
- */
-import type { Snapshot, TagDef } from "./backend";
+import type { Snapshot, TagDef } from "../api/backend";
 
-/** Lee el valor actual de una dirección en el último snapshot. */
 export function readValue(snapshot: Snapshot, address: string): unknown {
         return snapshot.values?.[address];
 }
 
-/** Convierte el valor crudo del PLC a number | boolean | null. */
 export function asNumber(value: unknown): number | null {
         return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -17,7 +12,6 @@ export function asBool(value: unknown): boolean {
         return value === true || value === 1 || value === "1";
 }
 
-/** Formatea un valor con su unidad y el tipo definido en el mapa HMI. */
 export function formatValue(tag: Pick<TagDef, "dataType" | "unit">, value: unknown): string {
         if (value === undefined || value === null) return "—";
 
@@ -30,8 +24,9 @@ export function formatValue(tag: Pick<TagDef, "dataType" | "unit">, value: unkno
         return tag.unit ? `${text} ${tag.unit}` : text;
 }
 
-/** Hora local (HH:MM:SS) de un timestamp en milisegundos. */
 export function formatTime(ts: number): string {
         if (!ts) return "—";
-        return new Date(ts).toLocaleTimeString("es-ES", { hour12: false });
+        const d = new Date(ts);
+        const p = (n: number) => String(n).padStart(2, "0");
+        return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }

@@ -13,22 +13,35 @@
 // cambios al frontend por eventos de Wails.
 //
 // Los valores "ro" evolucionan solos según la sección "sim" del tag en
-// hmi-config/machines.json; los "rw" solo cambian cuando el HMI escribe.
+// hmi-config/machines/*.json; los "rw" solo cambian cuando el HMI escribe.
+// Además, una escritura manual (POST /write) "fija" la tag: anula su
+// simulación hasta reiniciar el servidor. Así se pueden forzar condiciones
+// (p.ej. una alarma) de forma determinista desde pruebas o herramientas.
+//
+// Configuración: HMI_DIR apunta al directorio hmi-config/ (app.json +
+// machines/*.json); PLC_PORT cambia el puerto.
 
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { startEipServer } from "./eip.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_PATH = process.env.HMI_CONFIG ?? path.join(__dirname, "..", "hmi-config", "machines.json");
+const CONFIG_DIR = process.env.HMI_DIR ?? path.join(__dirname, "..", "hmi-config");
 const PORT = Number(process.env.PLC_PORT ?? 4100);
 
 // ---------------------------------------------------------------- config ---
 
 function loadConfig() {
-  const raw = fs.readFileSync(CONFIG_PATH, "utf8");
-  return JSON.parse(raw);
+  const app = JSON.parse(fs.readFileSync(path.join(CONFIG_DIR, "app.json"), "utf8"));
+  const machinesDir = path.join(CONFIG_DIR, "machines");
+  const machines = fs
+    .readdirSync(machinesDir)
+    .filter((f) => f.endsWith(".json"))
+    .sort()
+    .map((f) => JSON.parse(fs.readFileSync(path.join(machinesDir, f), "utf8")));
+  return { ...app, machines };
 }
 
 const config = loadConfig();
@@ -61,6 +74,8 @@ function clamp(v, tag) {
 
 function simStep(entry) {
   const { tag, machine, value } = entry;
+  // Una escritura manual fija el valor y desactiva la simulación de la tag.
+  if (entry.manual) return;
   const sim = tag.sim;
   if (!sim || sim.kind === "static") return;
 
@@ -212,6 +227,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     entry.value = coerced;
+    entry.manual = true; // anula la simulación de esta tag (fuerza manual)
     console.log(`[write] ${address} (${tag.name}) = ${JSON.stringify(coerced)}`);
     return send(res, 200, { ok: true, address, value: entry.value });
   }
@@ -220,7 +236,13 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "127.0.0.1", () => {
-  console.log(`PLC simulado escuchando en http://127.0.0.1:${PORT}`);
-  console.log(`  config: ${CONFIG_PATH}`);
+  console.log(`PLC simulado escuchando en http://127.0.0.1:${PORT} (diagnóstico)`);
+  console.log(`  config: ${CONFIG_DIR}`);
   console.log(`  tags en memoria: ${memory.size}`);
 });
+
+// ------------------------------------------------ EIP/CIP (el canal real) --
+// El HMI (PanelView) habla EtherNet/IP con el PLC por este socket: sesiones,
+// Forward Open y mensajería implícita/explícita. El HTTP de arriba es solo
+// interfaz de diagnóstico (como la web de estado de un PLC físico).
+startEipServer({ memory, order: [...memory.keys()] });

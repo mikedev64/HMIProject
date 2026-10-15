@@ -27,3 +27,24 @@
         --hmi-font: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         --hmi-mono: "SFMono-Regular", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
 }
+
+/*
+ * Soporte táctil de la librería (activo salvo flag --onlymouse):
+ * los controles responden a tap con el mismo pointer event que al ratón,
+ * sin retardo de clic, sin resaltado azul de móvil y sin selección de texto
+ * al mantener pulsado. No afecta al comportamiento con ratón.
+ */
+button,
+[role="switch"],
+[role="tab"],
+.hmi-number__input,
+.hmi-list-item {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+}
+
+.hmi-keypad__key,
+.hmi-btn,
+.hmi-switch {
+        user-select: none;
+}

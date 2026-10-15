@@ -1,0 +1,124 @@
+{
+  "id": "cinta-01",
+  "name": "Cinta transportadora 01",
+  "type": "cinta",
+  "image": "/images/machines/conveyor.svg",
+  "size": { "width": 360, "height": 200 },
+  "statusTags": { "run": "B3/10", "alarm": "B3/12", "ack": "B3/13" },
+  "tags": [
+    {
+      "name": "setpoint_velocidad",
+      "label": "Setpoint velocidad",
+      "address": "N7:10",
+      "dataType": "int16",
+      "access": "rw",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "group": "Proceso",
+      "default": 60,
+      "sim": { "kind": "static" }
+    },
+    {
+      "name": "velocidad_actual",
+      "label": "Velocidad actual",
+      "address": "F8:10",
+      "dataType": "float32",
+      "access": "ro",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "group": "Proceso",
+      "default": 0,
+      "sim": { "kind": "follow", "source": "N7:10", "gate": "B3/10", "noise": 1.5 }
+    },
+    {
+      "name": "motor_marcha",
+      "label": "Motor en marcha",
+      "address": "B3/10",
+      "dataType": "bool",
+      "access": "rw",
+      "group": "Actuadores",
+      "default": false,
+      "sim": { "kind": "static" }
+    },
+    {
+      "name": "sensor_entrada",
+      "label": "Sensor de entrada",
+      "address": "B3/11",
+      "dataType": "bool",
+      "access": "ro",
+      "group": "Estado",
+      "default": false,
+      "sim": { "kind": "boolToggle", "periodMs": 1400, "gate": "B3/10" }
+    },
+    {
+      "name": "piezas_contadas",
+      "label": "Piezas contadas",
+      "address": "N7:11",
+      "dataType": "int32",
+      "access": "ro",
+      "group": "Estado",
+      "default": 0,
+      "sim": { "kind": "counter", "gate": "B3/10", "periodMs": 1200 }
+    },
+    {
+      "name": "alarma_atasco",
+      "label": "Alarma de atasco",
+      "address": "B3/12",
+      "dataType": "bool",
+      "access": "ro",
+      "group": "Estado",
+      "default": false,
+      "sim": { "kind": "boolRandom", "probability": 0.005 }
+    },
+    {
+      "name": "ack_alarmas",
+      "label": "Reconocimiento alarma",
+      "address": "B3/13",
+      "dataType": "bool",
+      "access": "rw",
+      "group": "Estado",
+      "default": false,
+      "sim": { "kind": "static" }
+    }
+  ],
+  "hmi": {
+    "tabs": [
+      {
+        "id": "control",
+        "title": "Control",
+        "blocks": [
+          {
+            "type": "sections",
+            "sections": [
+              {
+                "title": "Mando",
+                "columns": 2,
+                "items": [
+                  { "kind": "switch", "tag": "motor_marcha", "label": "Motor" },
+                  { "kind": "button", "label": "Marcha", "variant": "primary", "write": { "tag": "motor_marcha", "value": true } },
+                  { "kind": "button", "label": "Paro", "variant": "danger", "write": { "tag": "motor_marcha", "value": false } },
+                  { "kind": "pad", "tag": "setpoint_velocidad", "label": "Setpoint velocidad" }
+                ]
+              },
+              {
+                "title": "Estado",
+                "columns": 2,
+                "items": [
+                  { "kind": "lamp", "tag": "motor_marcha", "label": "En marcha", "tone": "ok" },
+                  { "kind": "lamp", "tag": "alarma_atasco", "label": "Atasco", "tone": "danger" }
+                ]
+              }
+            ]
+          },
+          { "type": "groups" },
+          { "type": "recipes" }
+        ]
+      },
+      { "id": "proceso", "title": "Proceso", "blocks": [{ "type": "process" }] },
+      { "id": "tendencia", "title": "Tendencia", "blocks": [{ "type": "trend" }] },
+      { "id": "alarmas", "title": "Alarmas", "blocks": [{ "type": "alarms" }] }
+    ]
+  }
+}

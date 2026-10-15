@@ -1,0 +1,94 @@
+.hmi-sparkline {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+}
+
+.hmi-sparkline__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 11.5px;
+}
+
+.hmi-sparkline__label {
+        color: var(--hmi-text-dim);
+}
+
+.hmi-sparkline__value {
+        font-family: var(--hmi-mono);
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--hmi-text);
+        white-space: nowrap;
+}
+
+.hmi-sparkline svg {
+        display: block;
+        background: var(--hmi-surface-sunken);
+        border: 1px solid var(--hmi-border);
+        border-radius: var(--hmi-radius);
+}
+
+.hmi-sparkline__area {
+        fill: color-mix(in srgb, var(--hmi-accent) 14%, transparent);
+        stroke: none;
+}
+
+.hmi-sparkline__line {
+        fill: none;
+        stroke: var(--hmi-accent);
+        stroke-width: 1.5;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+}
+
+.hmi-sparkline__dot {
+        fill: var(--hmi-accent);
+        stroke: var(--hmi-surface-sunken);
+        stroke-width: 1;
+}
+
+.hmi-sparkline__empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 48px;
+        font-size: 11px;
+        color: var(--hmi-text-faint);
+        background: var(--hmi-surface-sunken);
+        border: 1px dashed var(--hmi-border);
+        border-radius: var(--hmi-radius);
+}
+/* Cursor de valores (hover): línea vertical + punto + hora debajo. */
+
+.hmi-sparkline svg {
+        cursor: crosshair;
+}
+
+.hmi-sparkline__cursor {
+        stroke: color-mix(in srgb, var(--hmi-accent) 75%, transparent);
+        stroke-width: 1;
+        stroke-dasharray: 3 3;
+        pointer-events: none;
+}
+
+.hmi-sparkline__dot--hover {
+        fill: var(--hmi-accent);
+        stroke: var(--hmi-surface);
+        pointer-events: none;
+}
+
+.hmi-sparkline__tip {
+        min-height: 13px;
+        font-family: var(--hmi-mono);
+        font-size: 10.5px;
+        text-align: right;
+        color: var(--hmi-text-dim);
+}
+
+.hmi-sparkline__tip.is-hidden {
+        visibility: hidden;
+}

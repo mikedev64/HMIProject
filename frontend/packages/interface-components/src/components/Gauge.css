@@ -1,0 +1,75 @@
+.hmi-gauge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        margin: 0;
+}
+
+.hmi-gauge--sm {
+        width: 116px;
+}
+
+.hmi-gauge--md {
+        width: 156px;
+}
+
+.hmi-gauge svg {
+        display: block;
+        width: 100%;
+        height: auto;
+}
+
+.hmi-gauge__track {
+        fill: none;
+        stroke: var(--hmi-border);
+        stroke-width: 8;
+        stroke-linecap: round;
+}
+
+.hmi-gauge__fill {
+        fill: none;
+        stroke: var(--hmi-accent);
+        stroke-width: 8;
+        stroke-linecap: round;
+        transition:
+                stroke-dasharray 0.3s ease-out,
+                stroke 0.3s ease-out;
+}
+
+.hmi-gauge--ok .hmi-gauge__fill {
+        stroke: var(--hmi-ok);
+}
+
+.hmi-gauge--warn .hmi-gauge__fill {
+        stroke: var(--hmi-warn);
+}
+
+.hmi-gauge--danger .hmi-gauge__fill {
+        stroke: var(--hmi-danger);
+}
+
+.hmi-gauge--idle .hmi-gauge__fill {
+        stroke: var(--hmi-border-strong);
+}
+
+.hmi-gauge__value {
+        font-family: var(--hmi-font);
+        font-size: 16px;
+        font-weight: 800;
+        fill: var(--hmi-text);
+}
+
+.hmi-gauge__unit {
+        font-family: var(--hmi-mono);
+        font-size: 8.5px;
+        font-weight: 600;
+        fill: var(--hmi-text-dim);
+}
+
+.hmi-gauge__label {
+        font-size: 11px;
+        color: var(--hmi-text-dim);
+        text-align: center;
+        letter-spacing: 0.03em;
+}

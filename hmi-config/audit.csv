@@ -1,0 +1,10 @@
+fecha_hora,usuario,nivel,maquina,tag,direccion,valor_anterior,valor_nuevo,error
+2026-10-11T15:54:17-05:00,admin,admin,Cinta transportadora 01,Motor en marcha,B3/10,false,true,
+2026-10-11T15:54:24-05:00,admin,admin,Bomba de proceso 01,Presión setpoint,F8:20,7.900000095367432,2.5,
+2026-10-11T15:54:35-05:00,admin,admin,Bomba de proceso 01,Presión setpoint,F8:20,2.5,7.5,
+2026-10-11T15:54:41-05:00,admin,admin,Bomba de proceso 01,Presión setpoint,F8:20,7.5,2.5,
+2026-10-11T15:54:46-05:00,admin,admin,Bomba de proceso 01,Presión setpoint,F8:20,2.5,7.5,
+2026-10-11T16:03:32-05:00,operador,operator,Mezcladora 01,Motor en marcha,B3/1,false,true,
+2026-10-11T16:03:32-05:00,operador,operator,Mezcladora 01,Motor en marcha,B3/1,true,false,
+2026-10-11T16:07:22-05:00,operador,operator,Bomba de proceso 01,Marcha bomba,B3/20,true,false,
+2026-10-11T16:07:24-05:00,operador,operator,Bomba de proceso 01,Marcha bomba,B3/20,false,true,

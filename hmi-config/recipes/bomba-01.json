@@ -1,0 +1,4 @@
+[
+  { "name": "Baja presión", "values": { "F8:20": 2.5 }, "updated": 0 },
+  { "name": "Alta presión", "values": { "F8:20": 7.5 }, "updated": 0 }
+]

@@ -1,4 +1,5 @@
 import { useRef, useState } from "preact/hooks";
+import { useKeypad } from "./Keypad";
 import "./NumberInput.css";
 
 export interface NumberInputProps {
@@ -7,6 +8,9 @@ export interface NumberInputProps {
         max?: number;
         step?: number;
         disabled?: boolean;
+        /** Etiqueta/unidad del tag: se muestran en el pad numérico. */
+        label?: string;
+        unit?: string;
         /** Se dispara al confirmar (blur o Enter), no en cada tecla. */
         oncommit: (value: number) => void;
 }
@@ -20,10 +24,17 @@ export interface NumberInputProps {
  * depende del render anterior ni del evento `change` (que Preact asocia al
  * nativo `change`, disparado solo al perder el foco).
  */
-export function NumberInput({ value, min, max, step = 1, disabled = false, oncommit }: NumberInputProps) {
+export function NumberInput({ value, min, max, step = 1, disabled = false, label, unit, oncommit }: NumberInputProps) {
         const [draft, setDraft] = useState<string | null>(null);
         // Evita el doble commit: Enter ya confirma y después hace blur().
         const skipBlur = useRef(false);
+
+        // Modo táctil (KeypadProvider enabled): tocar el campo abre el pad
+        // numérico en pantalla, como en un PanelView sin teclado físico.
+        // Con --onlymouse el provider está deshabilitado y se usa el teclado
+        // nativo de escritorio (inputMode "decimal").
+        const keypad = useKeypad();
+        const padActive = keypad.enabled && !disabled;
 
         const display = draft ?? (value === null || value === undefined ? "" : String(value));
 
@@ -59,9 +70,15 @@ export function NumberInput({ value, min, max, step = 1, disabled = false, oncom
                         <input
                                 class="hmi-number__input"
                                 type="text"
-                                inputMode="decimal"
+                                inputMode={padActive ? "none" : "decimal"}
+                                readOnly={padActive}
                                 value={display}
                                 disabled={disabled}
+                                onClick={(e) => {
+                                        if (!padActive) return;
+                                        keypad.open({ label, unit, value, min, max, step, oncommit });
+                                        e.currentTarget.blur(); // el edita el pad, no el input
+                                }}
                                 onInput={(e) => setDraft(e.currentTarget.value)}
                                 onBlur={(e) => {
                                         if (skipBlur.current) {

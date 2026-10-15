@@ -1,0 +1,82 @@
+.hmi-bar {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+}
+
+.hmi-bar__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 11.5px;
+}
+
+.hmi-bar__label {
+        color: var(--hmi-text-dim);
+}
+
+.hmi-bar__value {
+        font-family: var(--hmi-mono);
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--hmi-text);
+        white-space: nowrap;
+}
+
+.hmi-bar__track {
+        position: relative;
+        height: 10px;
+        border-radius: 99px;
+        background: var(--hmi-surface-sunken);
+        border: 1px solid var(--hmi-border);
+        overflow: hidden;
+}
+
+.hmi-bar__fill {
+        height: 100%;
+        border-radius: 99px;
+        background: var(--hmi-accent);
+        transition:
+                width 0.3s ease-out,
+                background 0.3s ease-out;
+}
+
+.hmi-bar__fill--ok {
+        background: var(--hmi-ok);
+}
+
+.hmi-bar__fill--warn {
+        background: var(--hmi-warn);
+}
+
+.hmi-bar__fill--danger {
+        background: var(--hmi-danger);
+}
+
+.hmi-bar__fill--idle {
+        background: var(--hmi-border-strong);
+}
+
+.hmi-bar__mark {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--hmi-text);
+        opacity: 0.85;
+        box-shadow: 0 0 0 1px var(--hmi-surface-sunken);
+}
+
+.hmi-bar__scale {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--hmi-mono);
+        font-size: 10px;
+        color: var(--hmi-text-faint);
+}
+
+.hmi-bar--compact .hmi-bar__track {
+        height: 7px;
+}

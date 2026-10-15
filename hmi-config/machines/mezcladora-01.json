@@ -1,0 +1,184 @@
+{
+  "id": "mezcladora-01",
+  "name": "Mezcladora 01",
+  "type": "mezcladora",
+  "image": "/images/machines/mixer.svg",
+  "size": { "width": 320, "height": 220 },
+  "statusTags": { "run": "B3/1", "alarm": "B3/2", "ack": "B3/0" },
+  "tags": [
+    {
+      "name": "setpoint_temperatura",
+      "label": "Setpoint temperatura",
+      "address": "N7:0",
+      "dataType": "int16",
+      "access": "rw",
+      "unit": "°C",
+      "min": 0,
+      "max": 250,
+      "group": "Proceso",
+      "default": 120,
+      "sim": { "kind": "static" }
+    },
+    {
+      "name": "temperatura_actual",
+      "label": "Temperatura actual",
+      "address": "F8:0",
+      "dataType": "float32",
+      "access": "ro",
+      "unit": "°C",
+      "min": 0,
+      "max": 300,
+      "group": "Proceso",
+      "default": 118,
+      "sim": { "kind": "follow", "source": "N7:0", "noise": 2.5 }
+    },
+    {
+      "name": "setpoint_velocidad",
+      "label": "Setpoint velocidad",
+      "address": "N7:1",
+      "dataType": "int16",
+      "access": "rw",
+      "unit": "rpm",
+      "min": 0,
+      "max": 3000,
+      "group": "Proceso",
+      "default": 1500,
+      "sim": { "kind": "static" }
+    },
+    {
+      "name": "velocidad_actual",
+      "label": "Velocidad actual",
+      "address": "F8:2",
+      "dataType": "int16",
+      "access": "ro",
+      "unit": "rpm",
+      "min": 0,
+      "max": 3000,
+      "group": "Proceso",
+      "default": 0,
+      "sim": { "kind": "follow", "source": "N7:1", "gate": "B3/1", "noise": 30 }
+    },
+    {
+      "name": "motor_marcha",
+      "label": "Motor en marcha",
+      "address": "B3/1",
+      "dataType": "bool",
+      "access": "rw",
+      "group": "Actuadores",
+      "default": false,
+      "sim": { "kind": "static" }
+    },
+    {
+      "name": "nivel_tanque",
+      "label": "Nivel de tanque",
+      "address": "F8:1",
+      "dataType": "float32",
+      "access": "ro",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "group": "Estado",
+      "default": 62,
+      "sim": { "kind": "sine", "base": 62, "amplitude": 8, "periodMs": 9000 }
+    },
+    {
+      "name": "alarma_vibracion",
+      "label": "Alarma de vibración",
+      "address": "B3/2",
+      "dataType": "bool",
+      "access": "ro",
+      "group": "Estado",
+      "default": false,
+      "sim": { "kind": "boolRandom", "probability": 0.01 }
+    },
+    {
+      "name": "lotes_producidos",
+      "label": "Lotes producidos",
+      "address": "N7:3",
+      "dataType": "int32",
+      "access": "ro",
+      "group": "Estado",
+      "default": 0,
+      "sim": { "kind": "counter", "gate": "B3/1", "periodMs": 4000 }
+    },
+    {
+      "name": "ack_alarmas",
+      "label": "Reconocimiento alarma",
+      "address": "B3/0",
+      "dataType": "bool",
+      "access": "rw",
+      "group": "Estado",
+      "default": false,
+      "sim": { "kind": "static" }
+    },
+    {
+      "name": "reset_lotes",
+      "label": "Reinicio contador",
+      "address": "B3/3",
+      "dataType": "bool",
+      "access": "rw",
+      "group": "Estado",
+      "default": false,
+      "sim": { "kind": "static" }
+    }
+  ],
+  "hmi": {
+    "tabs": [
+      {
+        "id": "control",
+        "title": "Control",
+        "blocks": [
+          {
+            "type": "sections",
+            "sections": [
+              {
+                "title": "Mando",
+                "columns": 2,
+                "items": [
+                  { "kind": "switch", "tag": "motor_marcha", "label": "Motor" },
+                  { "kind": "button", "label": "Marcha", "variant": "primary", "write": { "tag": "motor_marcha", "value": true } },
+                  { "kind": "button", "label": "Paro", "variant": "danger", "write": { "tag": "motor_marcha", "value": false } },
+                  { "kind": "pad", "tag": "setpoint_temperatura", "label": "Setpoint temperatura" }
+                ]
+              },
+              {
+                "title": "Setpoints",
+                "items": [
+                  { "kind": "number", "tag": "setpoint_temperatura" },
+                  { "kind": "number", "tag": "setpoint_velocidad" }
+                ]
+              },
+              {
+                "title": "Estado",
+                "columns": 2,
+                "items": [
+                  { "kind": "lamp", "tag": "motor_marcha", "label": "En marcha", "tone": "ok" },
+                  { "kind": "lamp", "tag": "alarma_vibracion", "label": "Vibración", "tone": "danger" },
+                  { "kind": "display", "tag": "lotes_producidos" }
+                ]
+              },
+              {
+                "title": "Mantenimiento",
+                "items": [
+                  {
+                    "kind": "button",
+                    "label": "Reinicio contador",
+                    "variant": "danger",
+                    "momentary": true,
+                    "minLevel": "admin",
+                    "write": { "tag": "reset_lotes", "value": true, "release": false }
+                  }
+                ]
+              }
+            ]
+          },
+          { "type": "groups" },
+          { "type": "recipes" }
+        ]
+      },
+      { "id": "proceso", "title": "Proceso", "blocks": [{ "type": "process" }] },
+      { "id": "tendencia", "title": "Tendencia", "blocks": [{ "type": "trend" }] },
+      { "id": "alarmas", "title": "Alarmas", "blocks": [{ "type": "alarms" }] }
+    ]
+  }
+}

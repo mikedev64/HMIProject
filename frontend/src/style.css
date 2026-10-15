@@ -29,6 +29,7 @@ body {
 /* ------------------------------------------------------------------ raíz */
 
 .hm-root {
+        position: relative; /* ancla del registro de alarmas (absolute) */
         display: flex;
         flex-direction: column;
         height: 100vh;
@@ -50,7 +51,7 @@ body {
 .hm-top {
         display: flex;
         align-items: center;
-        gap: 20px;
+        gap: 12px;
         padding: 0 16px;
         height: 52px;
         min-height: 52px;
@@ -83,23 +84,313 @@ body {
         letter-spacing: 0.14em;
 }
 
+/* Una sola fila siempre: si no cabe, scroll horizontal (nunca invadir el
+   body, donde está el canvas que interceptaría los clics). La lista tiene
+   PRIORIDAD de espacio (min-width) para que los names de máquina siempre
+   sean clicables; el resto del topbar se comprime si hace falta. */
 .hm-top .hmi-list {
-        flex: 1;
-        justify-content: center;
-        overflow: hidden;
+        flex: 1 1 auto;
+        min-width: 220px;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
 }
 
+/* Los items nunca se comprimen: el texto de cada máquina va en una línea. */
+.hm-top .hmi-list .hmi-list-item {
+        flex: none;
+        white-space: nowrap;
+}
+
+/* Sección del PLC (nombre + chip EIP): puede comprimirse para ceder
+   espacio a la lista de máquinas. */
 .hm-plc {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         white-space: nowrap;
+        flex-shrink: 1;
+        min-width: 0;
+}
+
+/* Acciones del topbar: pantalla completa, export CSV y registro de alarmas */
+
+.hm-tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+}
+
+.hm-alarmlog__btn {
+        padding: 0;
+        border: none;
+        background: none;
+        cursor: pointer;
+        line-height: 1;
+}
+
+/* --------------------------------------------- panel: pestañas y vistas */
+
+/* Las pestañas sangran hasta el borde del panel (el body tiene padding). */
+.hm-root .hmi-tabs {
+        margin: -14px -16px 12px;
+}
+
+.hm-panel__content {
+        min-height: 0;
+}
+
+.hm-empty {
+        margin: 18px 0;
+        font-size: 12.5px;
+        color: var(--hmi-text-faint);
+        text-align: center;
+}
+
+/* Vista «Proceso»: gauge principal + barras de rango */
+
+.hm-proc {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+}
+
+.hm-proc__hero {
+        display: flex;
+        justify-content: center;
+        padding: 4px 0 10px;
+        border-bottom: 1px dashed var(--hmi-border);
+}
+
+/* Vista «Tendencia»: sparklines apilados */
+
+.hm-trend {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+}
+
+/* ------------------------------------------------------- historial alarmas */
+
+.hm-alarms {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+}
+
+.hm-alarms__item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid var(--hmi-border);
+        border-radius: var(--hmi-radius);
+        background: var(--hmi-surface-raised);
+}
+
+.hm-alarms__item.is-active {
+        border-color: color-mix(in srgb, var(--hmi-danger) 55%, transparent);
+        background: color-mix(in srgb, var(--hmi-danger) 8%, var(--hmi-surface-raised));
+}
+
+.hm-alarms__dot {
+        flex-shrink: 0;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--hmi-border-strong);
+}
+
+.hm-alarms__item.is-active .hm-alarms__dot,
+.hm-alarmlog__list li.is-active .hm-alarms__dot {
+        background: var(--hmi-danger);
+        animation: hm-alarm-blink 1s ease-in-out infinite;
+}
+
+@keyframes hm-alarm-blink {
+        50% {
+                opacity: 0.3;
+        }
+}
+
+.hm-alarms__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 12.5px;
+}
+
+.hm-alarms__meta {
+        font-family: var(--hmi-mono);
+        font-size: 10.5px;
+        color: var(--hmi-text-faint);
+}
+
+.hm-alarms__meta code {
+        color: var(--hmi-accent);
+}
+
+/* Popover del registro global de alarmas (topbar) */
+
+.hm-alarmlog {
+        position: absolute;
+        top: 56px;
+        right: 12px;
+        z-index: 60;
+        width: 330px;
+        max-height: 60vh;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        background: color-mix(in srgb, var(--hmi-surface-raised) 97%, transparent);
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius-lg);
+        box-shadow: var(--hmi-shadow);
+        backdrop-filter: blur(6px);
+        animation: hmi-popover-in 0.12s ease-out;
+}
+
+.hm-alarmlog__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 13px;
+}
+
+.hm-alarmlog__actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+}
+
+.hm-alarmlog__close {
+        width: 26px;
+        height: 26px;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        border: 1px solid var(--hmi-border);
+        border-radius: var(--hmi-radius);
+        background: transparent;
+        color: var(--hmi-text-dim);
+        cursor: pointer;
+}
+
+.hm-alarmlog__close:hover {
+        color: var(--hmi-danger);
+        border-color: var(--hmi-danger);
+}
+
+.hm-alarmlog__empty {
+        margin: 6px 0;
+        font-size: 12px;
+        color: var(--hmi-text-faint);
+}
+
+.hm-alarmlog__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+}
+
+.hm-alarmlog__list li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        font-size: 12px;
+        border: 1px solid var(--hmi-border);
+        border-radius: var(--hmi-radius);
+        background: var(--hmi-surface);
+}
+
+.hm-alarmlog__list li.is-active {
+        border-color: color-mix(in srgb, var(--hmi-danger) 55%, transparent);
+}
+
+.hm-alarmlog__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+}
+
+.hm-alarmlog__body span {
+        color: var(--hmi-text-dim);
+        font-size: 11.5px;
+}
+
+.hm-alarmlog__time {
+        font-family: var(--hmi-mono);
+        font-size: 10.5px;
+        color: var(--hmi-text-faint);
 }
 
 .hm-plc__ts {
         font-family: var(--hmi-mono);
         font-size: 12px;
         color: var(--hmi-text-dim);
+}
+
+/* Chip de diagnóstico EtherNet/IP (sesión, RPI, secuencia, paquetes).
+   Compacto: solo el nº de secuencia a la vista; el resto (RPI, sesión,
+   connection IDs) vive en el tooltip (title). */
+.hm-eip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 7px;
+        border-radius: var(--hmi-radius);
+        border: 1px solid color-mix(in srgb, var(--hmi-accent) 45%, transparent);
+        background: color-mix(in srgb, var(--hmi-accent) 12%, transparent);
+        font-family: var(--hmi-mono);
+        font-size: 11px;
+        color: var(--hmi-text);
+        white-space: nowrap;
+        flex-shrink: 0; /* el chip nunca se colapsa: conserva su contenido */
+}
+
+.hm-eip__seq {
+        overflow: hidden;
+        text-overflow: ellipsis;
+}
+
+.hm-eip.is-down {
+        border-color: color-mix(in srgb, var(--hmi-danger, #e5484d) 55%, transparent);
+        background: color-mix(in srgb, var(--hmi-danger, #e5484d) 14%, transparent);
+        opacity: 0.85;
+}
+
+.hm-eip__dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--hmi-accent);
+        box-shadow: 0 0 6px color-mix(in srgb, var(--hmi-accent) 80%, transparent);
+}
+
+.hm-eip.is-down .hm-eip__dot {
+        background: var(--hmi-danger, #e5484d);
+        box-shadow: none;
+}
+
+.hm-eip__lost {
+        color: var(--hmi-danger, #e5484d);
 }
 
 .hm-banner {
@@ -128,6 +419,58 @@ body {
 
 .hm-stage canvas {
         display: block;
+        /* El pan/zoom se gestiona con pointer events: sin scroll nativo. */
+        touch-action: none;
+}
+
+/* HUD de navegación del lienzo: zoom con límites + reset a vista general */
+
+.hm-stage__hud {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px;
+        background: color-mix(in srgb, var(--hmi-surface) 92%, transparent);
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius-lg);
+        box-shadow: var(--hmi-shadow);
+        backdrop-filter: blur(6px);
+}
+
+.hm-hud__btn {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        font: 700 16px/1 var(--hmi-font);
+        color: var(--hmi-text);
+        background: var(--hmi-surface-raised);
+        border: 1px solid var(--hmi-border);
+        border-radius: var(--hmi-radius);
+        cursor: pointer;
+}
+
+.hm-hud__btn:hover {
+        color: var(--hmi-accent);
+        border-color: var(--hmi-accent);
+}
+
+.hm-hud__btn:active {
+        transform: translateY(1px);
+}
+
+.hm-hud__zoom {
+        min-width: 52px;
+        text-align: center;
+        font-family: var(--hmi-mono);
+        font-size: 12px;
+        color: var(--hmi-text-dim);
+        user-select: none;
 }
 
 /* --------------------------------------------------------------- popover */
@@ -211,4 +554,653 @@ body {
 
 .hm-notice--error {
         color: var(--hmi-danger);
+}
+
+/* ---------------------------------------------------- acceso (login) */
+
+.hm-login {
+        height: 100vh;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(1000px 500px at 20% -10%, color-mix(in srgb, var(--hmi-accent) 12%, transparent), transparent), var(--hmi-bg);
+}
+
+.hm-login__card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: min(360px, 92vw);
+        padding: 26px 28px;
+        background: var(--hmi-surface);
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius-lg);
+        box-shadow: var(--hmi-shadow);
+}
+
+.hm-login__brand {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 8px;
+}
+
+.hm-login__title {
+        margin: 2px 0 10px;
+        font-size: 14px;
+        text-align: center;
+        color: var(--hmi-text-dim);
+}
+
+.hm-login__label {
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--hmi-text-faint);
+}
+
+.hm-login__input {
+        padding: 9px 10px;
+        font: 14px/1.2 var(--hmi-font);
+        color: var(--hmi-text);
+        background: var(--hmi-surface-sunken);
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius);
+}
+
+.hm-login__input:focus {
+        outline: none;
+        border-color: var(--hmi-accent);
+}
+
+.hm-login__error {
+        margin: 4px 0 0;
+        padding: 8px 10px;
+        font-size: 12.5px;
+        color: #ffb3b3;
+        background: color-mix(in srgb, var(--hmi-danger) 18%, transparent);
+        border: 1px solid color-mix(in srgb, var(--hmi-danger) 45%, transparent);
+        border-radius: var(--hmi-radius);
+}
+
+.hm-login__hint {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin: 4px 0 0;
+        font-size: 11px;
+        color: var(--hmi-text-faint);
+}
+
+/* ------------------------------------------------- sesión en el topbar */
+
+.hm-user {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+}
+
+.hm-user__name {
+        font-size: 12.5px;
+        font-weight: 700;
+}
+
+/* --------------------------------------------- banner global de alarmas */
+
+.hm-banner-alarm {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 6px 16px;
+        font-size: 12.5px;
+        background: color-mix(in srgb, var(--hmi-danger) 16%, var(--hmi-surface-sunken));
+        border-bottom: 1px solid color-mix(in srgb, var(--hmi-danger) 45%, transparent);
+}
+
+.hm-banner-alarm__list {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        overflow: hidden;
+}
+
+.hm-banner-alarm__item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+}
+
+.hm-banner-alarm__item time {
+        font-family: var(--hmi-mono);
+        font-size: 11px;
+        color: var(--hmi-text-faint);
+}
+
+.hm-banner-alarm__more {
+        font-style: italic;
+        color: var(--hmi-text-dim);
+}
+
+/* ------------------------------------------- faceplates: secciones/bloques */
+
+.hm-section__grid {
+        display: grid;
+        gap: 10px;
+}
+
+/* En pantallas estrechas todo a una columna (el inline style manda salvo aquí). */
+@media (max-width: 760px) {
+        .hm-section__grid {
+                grid-template-columns: 1fr !important;
+        }
+}
+
+.hm-readout {
+        font-family: var(--hmi-mono);
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--hmi-text);
+}
+
+.hm-padbtn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        padding: 8px 12px;
+        font: 700 14px/1.2 var(--hmi-mono);
+        color: var(--hmi-text);
+        background: var(--hmi-surface-raised);
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius);
+        cursor: pointer;
+}
+
+.hm-padbtn:hover {
+        color: var(--hmi-accent);
+        border-color: var(--hmi-accent);
+}
+
+.hm-padbtn:active {
+        transform: translateY(1px);
+}
+
+.hm-padbtn__icon {
+        font-size: 14px;
+        opacity: 0.7;
+}
+
+.hm-lamp {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        font-size: 12.5px;
+        color: var(--hmi-text-dim);
+        background: var(--hmi-surface-raised);
+        border: 1px solid var(--hmi-border);
+        border-radius: var(--hmi-radius);
+}
+
+.hm-lamp__led {
+        width: 12px;
+        height: 12px;
+        flex: none;
+        border-radius: 50%;
+        background: var(--hmi-border-strong);
+}
+
+.hm-lamp.is-on {
+        color: var(--hmi-text);
+        border-color: var(--hmi-border-strong);
+}
+
+.hm-lamp--ok.is-on .hm-lamp__led {
+        background: var(--hmi-ok);
+        box-shadow: 0 0 8px var(--hmi-ok);
+}
+
+.hm-lamp--warn.is-on .hm-lamp__led {
+        background: var(--hmi-warn);
+        box-shadow: 0 0 8px var(--hmi-warn);
+}
+
+.hm-lamp--danger.is-on .hm-lamp__led {
+        background: var(--hmi-danger);
+        box-shadow: 0 0 8px var(--hmi-danger);
+}
+
+/* ------------------------------------------------ recetas (faceplate) */
+
+.hm-recipes__list {
+        list-style: none;
+        margin: 0 0 10px;
+        padding: 0;
+        border-top: 1px solid var(--hmi-border);
+}
+
+.hm-recipes__item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--hmi-border);
+}
+
+.hm-recipes__name {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 700;
+}
+
+.hm-recipes__meta {
+        font-family: var(--hmi-mono);
+        font-size: 11px;
+        color: var(--hmi-text-faint);
+}
+
+.hm-recipes__save {
+        display: flex;
+        gap: 8px;
+}
+
+.hm-recipes__input {
+        flex: 1;
+        min-width: 0;
+        padding: 7px 10px;
+        font: 13px/1.2 var(--hmi-font);
+        color: var(--hmi-text);
+        background: var(--hmi-surface-sunken);
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius);
+}
+
+.hm-recipes__input:focus {
+        outline: none;
+        border-color: var(--hmi-accent);
+}
+
+/* ---------------------------- auditoría (popover del topbar) */
+
+.hm-auditlog {
+        width: min(760px, 94vw);
+        max-height: 70vh;
+        display: flex;
+        flex-direction: column;
+}
+
+.hm-auditlog__list li {
+        gap: 12px;
+}
+
+.hm-auditlog__list li.is-error {
+        background: color-mix(in srgb, var(--hmi-danger) 10%, transparent);
+}
+
+.hm-auditlog__who {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        min-width: 96px;
+}
+
+.hm-auditlog__level {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--hmi-text-faint);
+}
+
+.hm-auditlog__change {
+        font-family: var(--hmi-mono);
+        font-size: 11.5px;
+        color: var(--hmi-text-dim);
+}
+
+.hm-auditlog__error {
+        display: block;
+        font-size: 11.5px;
+        color: var(--hmi-danger);
+}
+
+.hm-alarmlog__foot {
+        margin-top: 8px;
+        font-size: 11px;
+        color: var(--hmi-text-faint);
+}
+
+/* --------------------------- espacio de configuración (admin) */
+
+.hm-config {
+        position: fixed;
+        inset: 0;
+        z-index: 400;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: color-mix(in srgb, #000 55%, transparent);
+        backdrop-filter: blur(3px);
+}
+
+.hm-config__card {
+        display: flex;
+        flex-direction: column;
+        width: min(1100px, 96vw);
+        height: min(760px, 92vh);
+        background: var(--hmi-surface);
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius-lg);
+        box-shadow: var(--hmi-shadow);
+        overflow: hidden;
+}
+
+.hm-config__head {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--hmi-border-strong);
+        background: var(--hmi-surface-raised);
+}
+
+.hm-config__title {
+        font-size: 14px;
+}
+
+.hm-config__tabs {
+        display: flex;
+        gap: 6px;
+        flex: 1;
+}
+
+.hm-config__tab {
+        padding: 6px 12px;
+        font: 700 12.5px var(--hmi-font);
+        color: var(--hmi-text-dim);
+        background: none;
+        border: 1px solid transparent;
+        border-radius: var(--hmi-radius);
+        cursor: pointer;
+}
+
+.hm-config__tab.is-active {
+        color: var(--hmi-accent);
+        background: color-mix(in srgb, var(--hmi-accent) 14%, transparent);
+        border-color: color-mix(in srgb, var(--hmi-accent) 45%, transparent);
+}
+
+.hm-config__close {
+        padding: 4px 8px;
+        font-size: 15px;
+        color: var(--hmi-text-dim);
+        background: none;
+        border: none;
+        cursor: pointer;
+}
+
+.hm-config__close:hover {
+        color: var(--hmi-danger);
+}
+
+.hm-config__body {
+        flex: 1;
+        min-height: 0;
+        padding: 14px;
+        overflow: auto;
+}
+
+/* Editor de máquinas */
+
+.hm-cfgeditor {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 14px;
+        height: 100%;
+        min-height: 0;
+}
+
+.hm-cfgeditor__list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        overflow-y: auto;
+}
+
+.hm-cfgeditor__machine {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 8px 10px;
+        font: 700 13px var(--hmi-font);
+        text-align: left;
+        color: var(--hmi-text-dim);
+        background: var(--hmi-surface-sunken);
+        border: 1px solid var(--hmi-border);
+        border-radius: var(--hmi-radius);
+        cursor: pointer;
+}
+
+.hm-cfgeditor__machine code {
+        font-size: 10.5px;
+        color: var(--hmi-text-faint);
+}
+
+.hm-cfgeditor__machine.is-active {
+        color: var(--hmi-accent);
+        border-color: var(--hmi-accent);
+}
+
+.hm-cfgeditor__main {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        min-height: 0;
+}
+
+.hm-cfgeditor__toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+}
+
+.hm-cfgeditor__toolbar code {
+        font-family: var(--hmi-mono);
+        font-size: 11px;
+        color: var(--hmi-text-faint);
+}
+
+.hm-cfgeditor__spacer {
+        flex: 1;
+}
+
+.hm-cfgeditor__code {
+        flex: 1;
+        min-height: 240px;
+        padding: 10px 12px;
+        font: 12.5px/1.5 var(--hmi-mono);
+        color: var(--hmi-text);
+        background: var(--hmi-surface-sunken);
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius);
+        resize: none;
+        tab-size: 2;
+}
+
+.hm-cfgeditor__code:focus {
+        outline: none;
+        border-color: var(--hmi-accent);
+}
+
+.hm-cfgeditor__issues {
+        max-height: 30%;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+}
+
+.hm-cfgeditor__issue {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        font-size: 12.5px;
+}
+
+.hm-cfgeditor__issue.is-error {
+        color: #ffb3b3;
+}
+
+.hm-cfgeditor__issue.is-warn {
+        color: #ffd479;
+}
+
+.hm-cfgeditor__hint {
+        margin: 0;
+        font-size: 12px;
+        color: var(--hmi-text-faint);
+}
+
+/* Gestión de usuarios */
+
+.hm-users {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 780px;
+}
+
+.hm-users__table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+}
+
+.hm-users__table th {
+        padding: 6px 8px;
+        font-size: 11px;
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--hmi-text-faint);
+        border-bottom: 1px solid var(--hmi-border-strong);
+}
+
+.hm-users__table td {
+        padding: 8px;
+        border-bottom: 1px solid var(--hmi-border);
+}
+
+.hm-users__select {
+        padding: 6px 8px;
+        font: 13px var(--hmi-font);
+        color: var(--hmi-text);
+        background: var(--hmi-surface-sunken);
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius);
+}
+
+.hm-users__actions {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+}
+
+.hm-users__new {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        padding-top: 10px;
+        border-top: 1px dashed var(--hmi-border-strong);
+}
+
+/* Toolbar de la pestaña «Tendencia» (CSV + ayuda del cursor) */
+
+.hm-trend__toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+}
+
+/* ------------------------------------------ teclado en pantalla (login) */
+
+.hm-login__kbdtoggle {
+        align-self: center;
+        padding: 4px 10px;
+        font: 600 12px var(--hmi-font);
+        color: var(--hmi-text-dim);
+        background: none;
+        border: 1px dashed var(--hmi-border-strong);
+        border-radius: var(--hmi-radius);
+        cursor: pointer;
+}
+
+.hm-login__kbdtoggle:hover {
+        color: var(--hmi-accent);
+        border-color: var(--hmi-accent);
+}
+
+.hm-kbd {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 4px;
+        padding-top: 10px;
+        border-top: 1px solid var(--hmi-border);
+        user-select: none;
+}
+
+.hm-kbd__row {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+}
+
+.hm-kbd__key {
+        min-width: 30px;
+        padding: 8px 7px;
+        font: 700 13px var(--hmi-mono);
+        text-transform: uppercase;
+        color: var(--hmi-text);
+        background: var(--hmi-surface-raised);
+        border: 1px solid var(--hmi-border-strong);
+        border-radius: var(--hmi-radius);
+        cursor: pointer;
+        touch-action: manipulation;
+}
+
+.hm-kbd__key:hover {
+        color: var(--hmi-accent);
+        border-color: var(--hmi-accent);
+}
+
+.hm-kbd__key:active {
+        transform: translateY(1px);
+}
+
+.hm-kbd__key--wide {
+        padding-inline: 16px;
+        text-transform: none;
+}
+
+.hm-kbd__key--ok {
+        padding-inline: 16px;
+        color: var(--hmi-accent);
+        border-color: color-mix(in srgb, var(--hmi-accent) 55%, transparent);
+        text-transform: none;
 }

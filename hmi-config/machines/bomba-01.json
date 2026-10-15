@@ -1,0 +1,128 @@
+{
+  "id": "bomba-01",
+  "name": "Bomba de proceso 01",
+  "type": "bomba",
+  "image": "/images/machines/pump.svg",
+  "size": { "width": 300, "height": 220 },
+  "statusTags": { "run": "B3/20", "alarm": "B3/21", "ack": "B3/22" },
+  "tags": [
+    {
+      "name": "presion_setpoint",
+      "label": "Presión setpoint",
+      "address": "F8:20",
+      "dataType": "float32",
+      "access": "rw",
+      "unit": "bar",
+      "min": 0,
+      "max": 10,
+      "group": "Proceso",
+      "default": 4.5,
+      "sim": { "kind": "static" }
+    },
+    {
+      "name": "presion_descarga",
+      "label": "Presión de descarga",
+      "address": "F8:21",
+      "dataType": "float32",
+      "access": "ro",
+      "unit": "bar",
+      "min": 0,
+      "max": 12,
+      "group": "Proceso",
+      "default": 0,
+      "sim": { "kind": "follow", "source": "F8:20", "gate": "B3/20", "noise": 0.2 }
+    },
+    {
+      "name": "caudal",
+      "label": "Caudal",
+      "address": "F8:22",
+      "dataType": "float32",
+      "access": "ro",
+      "unit": "L/min",
+      "min": 0,
+      "max": 300,
+      "group": "Proceso",
+      "default": 0,
+      "sim": { "kind": "follow", "source": "F8:20", "gate": "B3/20", "noise": 4, "scale": 25 }
+    },
+    {
+      "name": "marcha_bomba",
+      "label": "Marcha bomba",
+      "address": "B3/20",
+      "dataType": "bool",
+      "access": "rw",
+      "group": "Actuadores",
+      "default": false,
+      "sim": { "kind": "static" }
+    },
+    {
+      "name": "horas_marcha",
+      "label": "Horas de marcha",
+      "address": "N7:20",
+      "dataType": "int32",
+      "access": "ro",
+      "unit": "h",
+      "group": "Estado",
+      "default": 0,
+      "sim": { "kind": "counter", "gate": "B3/20", "periodMs": 5000 }
+    },
+    {
+      "name": "alarma_sobrepresion",
+      "label": "Alarma sobrepresión",
+      "address": "B3/21",
+      "dataType": "bool",
+      "access": "ro",
+      "group": "Estado",
+      "default": false,
+      "sim": { "kind": "boolRandom", "probability": 0.004 }
+    },
+    {
+      "name": "ack_alarmas",
+      "label": "Reconocimiento alarma",
+      "address": "B3/22",
+      "dataType": "bool",
+      "access": "rw",
+      "group": "Estado",
+      "default": false,
+      "sim": { "kind": "static" }
+    }
+  ],
+  "hmi": {
+    "tabs": [
+      {
+        "id": "control",
+        "title": "Control",
+        "blocks": [
+          {
+            "type": "sections",
+            "sections": [
+              {
+                "title": "Mando",
+                "columns": 2,
+                "items": [
+                  { "kind": "switch", "tag": "marcha_bomba", "label": "Bomba" },
+                  { "kind": "button", "label": "Marcha", "variant": "primary", "momentary": true, "write": { "tag": "marcha_bomba", "value": true } },
+                  { "kind": "button", "label": "Paro", "variant": "danger", "write": { "tag": "marcha_bomba", "value": false } },
+                  { "kind": "pad", "tag": "presion_setpoint", "label": "Presión setpoint" }
+                ]
+              },
+              {
+                "title": "Estado",
+                "columns": 2,
+                "items": [
+                  { "kind": "lamp", "tag": "marcha_bomba", "label": "Bomba activa", "tone": "ok" },
+                  { "kind": "lamp", "tag": "alarma_sobrepresion", "label": "Sobrepresión", "tone": "danger" }
+                ]
+              }
+            ]
+          },
+          { "type": "groups" },
+          { "type": "recipes" }
+        ]
+      },
+      { "id": "proceso", "title": "Proceso", "blocks": [{ "type": "process" }] },
+      { "id": "tendencia", "title": "Tendencia", "blocks": [{ "type": "trend" }] },
+      { "id": "alarmas", "title": "Alarmas", "blocks": [{ "type": "alarms" }] }
+    ]
+  }
+}
